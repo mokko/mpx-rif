@@ -6,16 +6,16 @@ use warnings;
 use Getopt::Std;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-
 use MPX::RIF;
 
+
 my $opts = {};
-getopts( 'bds:', $opts );
+getopts( 'b:ds:t', $opts );
 
 #-s 1 - stop after scandir
 #-s 2 - stop after dirparser
 #-s 3 - stop after objId lookup
-#-b   - begin with scandir.yml
+#-b   - begin with 1-scandir.yml
 
 #
 # command line sanity
@@ -38,7 +38,11 @@ if ( !-f $ARGV[0] ) {
 my $config = { CONFIG => $ARGV[0] };
 
 if ( $opts->{b} ) {
-	$config->{BEGINWITHSCANDIRYML}=1;
+	if ($opts->{b} !~/\d/) {
+		print "-b parameter not a single digit integer\n";
+		exit 1;
+	}
+	$config->{BEGIN}=$opts->{b};
 }
 
 if ( $opts->{d} ) {
@@ -47,10 +51,14 @@ if ( $opts->{d} ) {
 
 if ( $opts->{s} ) {
 	if ( $opts->{s} !~ /\d/ ) {
-		print "Error: stop parameter is not an integer\n";
+		print "Error: stop parameter is not a single digit integer\n";
 		exit 1;
 	}
 	$config->{STOP} = $opts->{s};
+}
+
+if ( $opts->{t} ) {
+	$config->{TESTDATA} = 1;
 }
 
 

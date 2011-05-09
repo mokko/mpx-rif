@@ -6,12 +6,12 @@ use Carp qw/croak carp/;
 use File::Find::Rule;
 
 if ( !$ARGV[0] ) {
-	print "Error: No input dir specified";
+	print "Error: No input dir specified\n";
 	exit 1;
 }
 
 if ( !-d $ARGV[0] ) {
-	print "Error: Input is no directory";
+	print "Error: Input is no directory\n";
 	exit 1;
 }
 

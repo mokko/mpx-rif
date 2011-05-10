@@ -304,7 +304,10 @@ The steps are
  			   Resource store is dumped as yaml to check if this step was
  			   successful.
 
- (4) writeXML - The resource store is converted to XML-MPX or more precisely to
+ (4) filter - If a resource lacks one of a list of required features, the
+			   resource is dropped (deleted) form the resource store.
+
+ (5) writeXML - The resource store is converted to XML-MPX or more precisely to
  			   multimediaobjekt-records. The resulting file will be manually
  			   inserted into existing big mpx file and (re)imported in the OAI
  			   data provider. (Alternatively, I could write a variant of the
@@ -874,26 +877,7 @@ You can find documentation for this module with the perldoc command.
 
 You can also look for information at:
 
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=MPX-RIF>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/MPX-RIF>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/MPX-RIF>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/MPX-RIF/>
-
-=back
-
+github.com/mokko/mpx-rif
 
 =head1 ACKNOWLEDGEMENTS
 

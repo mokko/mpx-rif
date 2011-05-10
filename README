@@ -1,15 +1,19 @@
 MPX-RIF
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
+There are many images. It takes very long to enter them manually in the
+database. For each item, there are many repetitive information items, e.g. 1000
+fotos were made by the same fotographer.
 
-A README file is required for CPAN modules since CPAN extracts the README
-file from a module distribution so that people browsing the archive
-can use it to get an idea of the module's uses. It is usually a good idea
-to provide version information here so that people can decide whether
-fixes for the module are worth downloading.
+This little perl tool parses a directory and writes XML/MPX with the metadata.
+
+The whole process is broken down in several consecutive steps.
+
+State information is dumped a couple of times during executing as yaml, to
+facilitate proof-reading and error checking. There are debug messages and log
+messages which should help you finding quirks in your data.
+
+The tool is pretty configurable. It's written in a haste i.e. no great code, but
+should be at least readable.
 
 
 INSTALLATION
@@ -27,20 +31,6 @@ After installing, you can find documentation for this module with the
 perldoc command.
 
     perldoc MPX::RIF
-
-You can also look for information at:
-
-    RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=MPX-RIF
-
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/MPX-RIF
-
-    CPAN Ratings
-        http://cpanratings.perl.org/d/MPX-RIF
-
-    Search CPAN
-        http://search.cpan.org/dist/MPX-RIF/
 
 
 LICENSE AND COPYRIGHT

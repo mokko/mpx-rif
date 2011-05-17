@@ -69,3 +69,15 @@ if ( $opts->{t} ) {
 my $faker = MPX::RIF->new($config);
 $faker->run();
 
+=head1 NAME
+
+mpx-rif.pl
+
+=head2 SYNOPSIS
+
+mpx-rif.pl -d conf/MIMO.yml
+
+-d debug
+-b 1
+-s 1
+=cut

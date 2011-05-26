@@ -57,6 +57,7 @@ if ( $opts->{s} ) {
 	$config->{STOP} = $opts->{s};
 }
 
+#used? not documented at the moment
 if ( $opts->{t} ) {
 	$config->{TESTDATA} = 1;
 }
@@ -77,7 +78,16 @@ mpx-rif.pl
 
 mpx-rif.pl -d conf/MIMO.yml
 
--d debug
+-d
+
+	print lots of debug info to STDOUT while executing
+
 -b 1
+
+	begin with step 1
+
 -s 1
+
+	stop after step 1
+
 =cut

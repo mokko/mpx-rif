@@ -6,7 +6,8 @@ use utf8;
 use FindBin;
 use Carp qw(croak carp);
 use File::Find::Rule;
-use IO::File;
+
+#use IO::File;
 
 use lib "$FindBin::Bin/../lib";
 use MPX::RIF::Helper qw(debug log);
@@ -175,6 +176,7 @@ sub filter {
 
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
+
 		#debug "filter:$id";
 
 		my $ok = 1;
@@ -182,7 +184,12 @@ sub filter {
 			my $value = $resource->get($feat);
 			if ( !$value ) {
 				debug "filter drop: $id has no $feat";
-				log "filter drop: $id has no $feat";
+
+				#I already have a log warning that objId could not be
+				#identified, so need not log it again
+				#this might change if verknüpftesObjekt is not the only
+				#obligatory anymore
+				#log "filter drop: $id has no $feat";
 				$ok = 0;
 			}
 		}
@@ -423,6 +430,7 @@ sub writeXML {
 	my $self = shift;
 
 	my $output;
+	debug "Begin writingXML";
 
 	my $writer = new XML::Writer(
 		NEWLINES   => 0,
@@ -442,30 +450,58 @@ sub writeXML {
 
 	#FOREACH multimediaobjekt
 	foreach my $id ( $self->_resourceIds ) {
+		debug "xmlifying $id";
+
 		my $resource = $self->_getResource($id);
 
 		# now in XSD DateTime Format!
 		my $time = time();
 		my $now  = ConvertDate( ParseDateString("epoch $time") );
-		my ( $sec, $msec ) = gettimeofday;
-		my $mulId = $time . $msec;
 
-		$writer->startTag(
-			'multimediaobjekt',
-			'exportdatum' => $now,
-			'mulId'       => $mulId,
-		);
+		#old mulId
+		#my ( $sec, $msec ) = gettimeofday;
+		#my $mulId = $time . $msec;
 
-		#this should be elsewhereş
-		$resource->path2mpx('id');
+		#new mulId
+		my $objId = $self->{data}->{$id}->get('verknüpftesObjekt');
+		my $pref  = $self->{data}->{$id}->get('pref');
 
-		#delete $resource->{id};
+		my $mulId;
+		if ( $objId && $pref ) {
+			$mulId = "$objId-$pref";
+			debug "NEW mulId $mulId";
 
-		foreach my $feat ( $resource->loopFeatures ) {
-			my $value = $resource->get($feat);
-			$writer->dataElement( $feat, $value );
+			my %attributes = (
+				'exportdatum' => $now,
+				'mulId'       => $mulId,
+			);
+
+			#my $pref=$resource->get('pref');
+			if ( my $pref = $resource->get('pref') ) {
+				$attributes{'priorität'} = $pref;
+				delete $self->{data}->{$id}->{pref};
+			}
+
+			#my $freigabe=$resource->get('freigabe');
+			if ( my $freigabe = $resource->get('freigabe') ) {
+				$attributes{'freigabe'} = $freigabe;
+				delete $self->{data}->{$id}->{freigabe};
+			}
+
+			$writer->startTag( 'multimediaobjekt', %attributes );
+
+			#this should be elsewhereş
+			#$resource->path2mpx('id');
+			$resource->rmFeat('id');
+
+			#delete $resource->{id};
+
+			foreach my $feat ( $resource->loopFeatures ) {
+				my $value = $resource->get($feat);
+				$writer->dataElement( $feat, $value );
+			}
+			$writer->endTag('multimediaobjekt');
 		}
-		$writer->endTag('multimediaobjekt');
 	}
 
 	$writer->endTag('museumPlusExport');
@@ -597,18 +633,25 @@ sub _config {
 	}
 
 	#specific tests
-	if ( !-e $self->{scandir} ) {
-		print "Error: Specified scandir does not exit ($self->{scandir})\n";
-		exit 1;
+	if ( !$self->{BEGIN} ) {
+		if ( !-e $self->{scandir} ) {
+			print "Error: Specified scandir does not exit ($self->{scandir})\n";
+			exit 1;
+		}
+
+		if ( !-d $self->{scandir} ) {
+			print "Error: Scandir is no directory\n";
+			exit 1;
+		}
 	}
 
-	if ( !-d $self->{scandir} ) {
-		print "Error: Scandir is no directory\n";
-		exit 1;
-	}
+	if ( !$self->{lookup} ) {
+		debug "Warning: Lookup mpx not specified in config";
+	} else {
 
-	if ( !-f $self->{lookup} ) {
-		print "Warning: Lookup mpx file not found\n";
+		if ( !-f $self->{lookup} ) {
+			print "Warning: Lookup mpx file not found\n";
+		}
 	}
 
 	#

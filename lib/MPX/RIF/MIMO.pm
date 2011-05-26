@@ -4,11 +4,13 @@ use strict;
 use warnings;
 use FindBin;
 use File::Spec;
+use UTF8;
 use Carp qw/carp croak/;
 
 #use lib "$FindBin::Bin/../../lib"; #?
 use MPX::RIF::Helper qw(debug log);
 use MPX::RIF::Resource;
+use Encode qw(from_to decode);
 
 #not used
 our $verbose = 0;
@@ -36,8 +38,22 @@ sub parsedir {
 	}
 
 	#debug "DDDDD:$resource|".ref $resource;
-
 	my $path = $resource->get('id');
+
+	# I have some intransparent issues with Umlaute, a unicode problem
+	# 1) read file names from disk.
+	#    I imagine that perl gets it correctly
+	# 2) write it to YML
+	#    here i have problems already
+	# 3) process it here
+	# 4) output it
+
+	#debug "path:$path";
+	from_to( $path, 'UTF-8', 'cp1252' );
+
+	#debug here should be incorrect!
+	#debug " unicode incorrect? path:$path";
+	#if I have to do this, I should better be doing it when I initially
 
 	if ( !$path ) {
 		croak "Internal error: resource has no id/path\n";
@@ -46,6 +62,18 @@ sub parsedir {
 	debug "+parsedir $path\n";
 
 	my ( $volume, $directories, $file ) = File::Spec->splitpath($path);
+
+	#files
+	$file =~ /\.(\w+)$/;
+	if ($1) {
+
+		my $erweiterung = $1;
+		my $dateiname   = $file;
+		$dateiname =~ s/\.$erweiterung//;
+		$resource->addFeatures( multimediaPfadangabe => cyg2win($directories) );
+		$resource->addFeatures( multimediaDateiname  => $dateiname );
+		$resource->addFeatures( multimediaErweiterung => $erweiterung );
+	}
 
 	if ( !$file ) {
 		carp "+Error: parsedir cannot find file in $path\n";
@@ -56,27 +84,39 @@ sub parsedir {
 		log "+: parsedir cannot find file in $path\n";
 	}
 
-	#my $identNr=identNr($file);
-	my $identNr=testFile($file);
+	#identNr
+	my $identNr = identNr($file);
 	if ($identNr) {
 		$resource->addFeatures( identNr => $identNr );
 	}
 
-	my $urheber=fotograf($directories);
+	#fotograph(=urheber)
+	my $urheber = urheber($directories);
 	if ($urheber) {
-		$resource->addFeatures(
-			multimediaUrhebFotograf => $urheber );
+		$resource->addFeatures( multimediaUrhebFotograf => $urheber );
 	}
+
+	#farbe
+	my $farbe = farbe($directories);
+	if ($farbe) {
+		$resource->addFeatures( multimediaFarbe => $farbe );
+	}
+
+	#pref
+	my $pref = pref($file);
+	if ($pref) {
+		$resource->addFeatures( 'pref' => $pref );
+	}
+
+	#freigabe
+	my $freigabe = freigabe($file);
+	if ($freigabe) {
+		$resource->addFeatures( freigabe => $freigabe );
+	}
+
+	#mulId ($resource); at this time we don't have the verknüpftesObjekt yet
+
 	return $resource;
-}
-
-
-sub testFile {
-	my $file=shift;
-	$file=~/(\d+)/;
-	my $no=$1;
-	debug "testFile->no:$no";
-	return $no;
 }
 
 =head2 my $identNr=identNr($file);
@@ -89,14 +129,15 @@ sub identNr {
 	$file =~ /(VII|I|III)[_|\s]
 	       ([a-f]|nls|[a-f] nls)[_|\s]
 	       (\d+)[_|\s|\.|\-\w|]
-	       ([a-h]|a,b|ab|a+b|)/xi;
+	       ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-h]|)/xi;
 
 	#three parts are required
 	if ( !( $1 && $2 && $3 ) ) {
 		log " +identNr: Cannot identify $file";
 	} else {
 		my $identNr = uc($1) . ' ' . $2 . ' ' . $3;
-		debug " +identNr: $identNr\n";
+		$identNr .= ' ' . $4 if $4;
+		debug " +identNr: $identNr";
 		return $identNr;
 
 	}
@@ -107,15 +148,14 @@ sub identNr {
 
 =cut
 
-sub fotograf {
+sub urheber {
 	my $dirs = shift;
 
-	#print "dirs:$dirs\n";
 	my @dirs = File::Spec->splitdir($dirs);
 
 	#@dirs=split(/\\/, $dirs);
 
-	my $urheber = $dirs[-1];
+	my $urheber = $dirs[-2];
 
 	if ( !$urheber ) {
 
@@ -124,10 +164,147 @@ sub fotograf {
 		return ();
 	}
 
-	#$urheber=~s/_/ /;
-	debug " +fotograf: $urheber\n";
+	$urheber =~ s!_! !g;
+
+	debug " +fotograf: $urheber";
 	return $urheber;
 }
 
+=head2 my $farbe=farbe($directories);
+
+=cut
+
+sub farbe {
+	my $dirs = shift;
+	my @dirs = File::Spec->splitdir($dirs);
+
+	my $farbe = $dirs[-3];
+
+	if ( !$farbe ) {
+
+		log " +no farbe found ($dirs)!";
+		return ();
+	}
+
+	#$farbe =~ s/_/ /g;
+
+	debug " +farbe: $farbe";
+	return $farbe;
+
+}
+
+sub pref {
+	my $file = shift;
+	my $pref;
+
+	if ( $file =~ /-([A-Z]).*\.\w+$/ ) {
+		$pref = $1;
+
+		#debug "letter: $1";
+		$pref = alpha2num($pref);
+		debug " +pref $pref";
+		if ( $pref !~ /\d+/ ) {
+			my $msg = "pref is not numeric '$pref' ($file)";
+			log $msg;
+			debug $msg;
+		}
+		return $pref;
+	}
+
+	log "no priortität! Assume 1 ($file)";
+	return 1;
+}
+
+sub freigabe {
+	my $file = shift;
+
+	if ( $file =~ / x\.\w+$/ ) {
+		debug " +freigabe";
+		return "web";
+	}
+}
+
+=head2 my $winpath=cygpath($nixPath);
+
+Quick,dirty and VERY slow.
+
+=cut
+
+sub cygpath {
+	my $nix_path = shift;
+
+	#should I check if path is unix path? Could be difficult
+	if ($nix_path) {
+		my $win_path = `cygpath -wa '$nix_path'`;
+		$win_path =~ s/\s+$//;
+		return $win_path;
+
+	} else {
+
+		#catches error which breaks execution
+		warn "Warning: cygpath called without param";
+	}
+}
+
+=head2 my $winpath=cyg2win($nixPath);
+
+Quick,dirty and fast!
+
+I eliminate trailing slash.
+
+=cut
+
+sub cyg2win {
+	my $nix = shift;
+
+	$nix =~ m!^/cygdrive/(\w+)/(.*)[/|]!;
+	my $drive = $1 if $1;
+	my $path  = $2 if $2;
+	if ( $path && $drive ) {
+		$path =~ s!/!\\!g;
+		my $win = "$drive:\\$path";
+
+		#debug "cyg2win-nix: $nix";
+		debug "cyg2win: $win";
+		return $win;
+	}
+}
+
+sub alpha2num {
+	my $in=shift;
+
+	my %tr = (
+		A => 1,
+		B => 2,
+		C => 3,
+		D => 4,
+		E => 5,
+		F => 6,
+		G => 7,
+		H => 8,
+		I => 9,
+		J => 10,
+		K => 11,
+		L => 12,
+		M => 13,
+		N => 14,
+		O => 15,
+		P => 16,
+		Q => 17,
+		R => 18,
+		S => 19,
+		T => 20,
+		U => 21,
+		V => 22,
+		W => 23,
+		X => 24,
+		Y => 25,
+		Z => 26,
+	);
+
+	if ( $tr{$in} ) {
+		return $tr{$in};
+	}
+}
 
 1;

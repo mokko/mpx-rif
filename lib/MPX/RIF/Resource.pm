@@ -115,6 +115,8 @@ sub addConstants {
 =head2 my $value=$resource->get('feature');
 
 getter that returns the value for a specified feature.
+If feature doesn't return, getter returns nothing. So you can use it to
+test if feature exists.
 
 =cut
 
@@ -161,9 +163,9 @@ sub loopFeatures {
 	Assumes that id has path.
 
 
-TODO
+	not used any more!
 
-deletes key id and tries to split into its mpx compontents
+
 
 =cut
 
@@ -179,7 +181,7 @@ sub path2mpx {
 	if ( !$path ) {
 		croak "No feature with name $feat!";
 	}
-	delete $resource->{$feat};
+	#delete $resource->{$feat};
 
 	#I will likely have cygpaths, so I need some kind of conversion
 	$path = cygpath($path);
@@ -191,7 +193,7 @@ sub path2mpx {
 	$path =~ /(\S):\\([\S |\\]+)\\(\S+)\.(\S+)/;
 
 	if ( $1 && $2 && $3 && $4 ) {
-		#debug "split: $1:\\$2 -X- $3 -X- $4";
+		debug "split: $1:\\$2 -X- $3 -X- $4";
 		$resource->addFeatures(
 			multimediaPfadangabe  => "$1:\\$2",
 			multimediaDateiname   => $3,
@@ -203,6 +205,23 @@ sub path2mpx {
 	#multimediaPfadangabe
 	#multimediaDateiname
 	#multimediaErweiterung
+}
+
+=head2 $resource->rmFeat ($feat);
+
+Delete a feature, expects feature name.
+
+=cut
+
+sub rmFeat {
+	my $resource = shift;    #function or method?
+	my $feat     = shift;
+
+	if ($resource->{$feat}) {
+		delete $resource->{$feat};
+	} else {
+		return ();
+	}
 }
 
 =head2 my $winpath=cygpath($nixPath);

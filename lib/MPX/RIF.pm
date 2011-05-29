@@ -66,7 +66,13 @@ information (XML).
 	$faker->lookupObjId();
 
 	#4th step
+	$faker->filer();
+
+	#5th step
 	$faker->writeXML();
+
+	#6th step
+	$faker->validate();
 
 	#Everything else is considered to be the private parts of this module.
 	#For more info see the method run (overview) and the individual methods.
@@ -320,6 +326,8 @@ The steps are
  			   data provider. (Alternatively, I could write a variant of the
  			   digester which digests mulitmediaobjekte.)
 
+ (6) validate - validate XML and check for duplicate mulId
+
 =cut
 
 sub run {
@@ -369,16 +377,33 @@ sub run {
 	#
 	# STEP 4 - filter
 	#
+	if ( $self->{BEGIN} < 6
+		or ( !$self->{BEGIN} ) )
+	{
 
-	$self->filter();
+		$self->filter();
+	}
 
 	#
 	# STEP 5 writeXML
 	#
+	if ( $self->{BEGIN} < 6
+		or ( !$self->{BEGIN} ) )
+	{
 
-	$self->writeXML;
+		$self->writeXML;
+	}
 
-	debug "done\n";
+	#
+	# STEP 6 validate
+	#
+	if ( $self->{BEGIN} == 6
+		or ( !$self->{BEGIN} ) )
+	{
+		$self->validate;
+	}
+
+debug "done\n";
 }
 
 =head2 $faker->scandir
@@ -421,6 +446,47 @@ sub scandir {
 	$self->stop(1);
 }
 
+=head2 $self->validate();
+
+Validate resulting mpx and check for duplicate mulIds. Log errors.
+
+=cut
+
+sub validate {
+	my $self   = shift;
+	my $doc; #will store parsed xml
+
+	debug "Begin validation";
+
+	#if no output then load from file
+	if ( $self->{output} ) {
+		$doc = XML::LibXML->new->parse_string( $self->{output} );
+	} else {
+		debug "Load $temp->{5}";
+		$doc = XML::LibXML->new->parse_file( $temp->{5} );
+	}
+
+	#todo: URI has to go somewhere else. In some configuration
+	my $xmlschema =
+	  XML::LibXML::Schema->new(
+		location => 'file:/home/mengel/projects/MPX/latest/mpx.xsd' );
+
+	eval { $xmlschema->validate($doc); };
+
+	if ($@) {
+		my $msg = "mpx failed validation: $@";
+		log $msg;
+		debug $msg;
+	} else {
+		debug "mpx validates\n";
+	}
+
+	#
+	# todo - check for duplicate mulIds
+	#
+
+}
+
 =head2 $self->writeXML();
 	TODO: maybe I should check if an resource is complete before I xml-ify it
 
@@ -429,14 +495,15 @@ sub scandir {
 sub writeXML {
 	my $self = shift;
 
-	my $output;
 	debug "Begin writingXML";
+	my $output;
+	my $mpx_ns = 'http://www.mpx.org/mpx';
 
 	my $writer = new XML::Writer(
 		NEWLINES   => 0,
 		NAMESPACES => 1,
 		PREFIX_MAP => {
-			'http://www.mpx.org/mpx'                    => '',
+			$mpx_ns                                     => '',
 			'http://www.w3.org/2001/XMLSchema-instance' => 'xsi'
 		},
 		DATA_INDENT => 2,
@@ -444,6 +511,8 @@ sub writeXML {
 		OUTPUT      => \$output
 	);
 
+	$writer->xmlDecl("UTF-8");
+	$writer->forceNSDecl($mpx_ns);
 	$writer->startTag('museumPlusExport');
 
 	$main::TZ = "CET";
@@ -466,9 +535,10 @@ sub writeXML {
 		my $objId = $self->{data}->{$id}->get('verknüpftesObjekt');
 		my $pref  = $self->{data}->{$id}->get('pref');
 
+		#current mpx required mulID to be an integer
 		my $mulId;
 		if ( $objId && $pref ) {
-			$mulId = "$objId-$pref";
+			$mulId = $objId . '00000' . $pref;
 			debug "NEW mulId $mulId";
 
 			my %attributes = (
@@ -510,9 +580,10 @@ sub writeXML {
 	debug "about to write XML";
 	open( my $fh, '>:encoding(UTF-8)', $temp->{5} ) or die $!;
 	print $fh $output;
-
 	close $fh;
+	$self->stop(5);
 
+	$self->{output} = $output;
 }
 
 =head1 HELPER METHODS
@@ -585,7 +656,7 @@ sub _addCLI {
 
 	if ( $opts->{BEGIN} ) {
 		$self->{BEGIN} = $opts->{BEGIN};
-		if ( $self->{BEGIN} > 3 ) {
+		if ( $self->{BEGIN} > 6 ) {
 			$self->{BEGIN} = 0;
 		}
 		debug "BEGIN mode on: " . $self->{BEGIN};

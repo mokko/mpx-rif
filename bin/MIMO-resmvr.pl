@@ -57,7 +57,8 @@ This script primarily looks for resource metadata (loop thur each
 multimediaobjekt). This script logs warnings for file specified in mpx, but
 cannot be found at this location during runtime.
 
-I do not check if there are files which have no multimediaobjekte.
+I do not check if there are files which have no multimediaobjekte. I did not
+check if there are dublicate multimediaobjekte.
 
 Should I also check which multimediaobjekt has no verknüpftesObjekt?
 Maybe there are multimediaobjekte which are not meant for MIMO? Maybe in a

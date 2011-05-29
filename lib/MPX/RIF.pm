@@ -66,7 +66,7 @@ information (XML).
 	$faker->lookupObjId();
 
 	#4th step
-	$faker->filer();
+	$faker->filter();
 
 	#5th step
 	$faker->writeXML();

@@ -403,7 +403,7 @@ sub run {
 		$self->validate;
 	}
 
-debug "done\n";
+	debug "done\n";
 }
 
 =head2 $faker->scandir
@@ -453,8 +453,13 @@ Validate resulting mpx and check for duplicate mulIds. Log errors.
 =cut
 
 sub validate {
-	my $self   = shift;
-	my $doc; #will store parsed xml
+	my $self = shift;
+	my $doc;    #will store parsed xml
+
+	if ( !$self->{mpxxsd} ) {
+		debug "Cannot find schema, cannot validate";
+		return ();
+	}
 
 	debug "Begin validation";
 
@@ -467,9 +472,7 @@ sub validate {
 	}
 
 	#todo: URI has to go somewhere else. In some configuration
-	my $xmlschema =
-	  XML::LibXML::Schema->new(
-		location => 'file:/home/mengel/projects/MPX/latest/mpx.xsd' );
+	my $xmlschema = XML::LibXML::Schema->new( location => $self->{mpxxsd} );
 
 	eval { $xmlschema->validate($doc); };
 
@@ -485,6 +488,28 @@ sub validate {
 	# todo - check for duplicate mulIds
 	#
 
+	my $xpath  = '/mpx:museumPlusExport/mpx:multimediaobjekt/@mulId';
+	my $xpc    = registerNS($doc);
+	my @mulIds = $xpc->findnodes($xpath);
+	debug "no of mulIds ". scalar @mulIds;
+
+	my %seen;
+	foreach my $mulId (@mulIds) {
+		$mulId=$mulId->getValue;
+		$seen{$mulId}++;
+		if ( $seen{$mulId} > 1 ) {
+			my $msg ="mulId $mulId not unique!";
+			debug $msg;
+			log $msg;
+		}
+	}
+}
+
+sub registerNS {
+	my $doc = shift;
+	my $xpc = XML::LibXML::XPathContext->new($doc);
+	$xpc->registerNs( 'mpx', 'http://www.mpx.org/mpx' );
+	return $xpc;
 }
 
 =head2 $self->writeXML();

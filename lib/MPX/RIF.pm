@@ -234,9 +234,15 @@ sub _lookupObjId {
 
 	#debug "Enter _lookupObjId (look for $identNr)";
 
-	my @nodes = $doc->findnodes(
-"mpx:museumPlusExport/mpx:sammlungsobjekt[mpx:identNr = '$identNr' ]/\@objId"
-	);
+	#Soll ist Lars Methode: Konvolut-DS soll in M+ sein sowie
+	#eigener DS für Unternummern. Damit wir nicht mehrere ObjIds für einen
+	#Obj bekommen, filtern wir die IdentNr heraus (Wiederholfeld), die automa
+	#tisch von M+ erzeugt werden und mit 'Ident. Unternummer' qualifiziert
+	#werden
+	my @nodes =
+	  $doc->findnodes( "mpx:museumPlusExport/mpx:sammlungsobjekt"
+		  . "[mpx:identNr = '$identNr' and art != 'Ident. Unternummer']/\@objId"
+	  );
 
 	#return empty handed if no objId found
 	if ( !@nodes ) {
@@ -491,14 +497,14 @@ sub validate {
 	my $xpath  = '/mpx:museumPlusExport/mpx:multimediaobjekt/@mulId';
 	my $xpc    = registerNS($doc);
 	my @mulIds = $xpc->findnodes($xpath);
-	debug "no of mulIds ". scalar @mulIds;
+	debug "no of mulIds " . scalar @mulIds;
 
 	my %seen;
 	foreach my $mulId (@mulIds) {
-		$mulId=$mulId->getValue;
+		$mulId = $mulId->getValue;
 		$seen{$mulId}++;
 		if ( $seen{$mulId} > 1 ) {
-			my $msg ="mulId $mulId not unique!";
+			my $msg = "mulId $mulId not unique!";
 			debug $msg;
 			log $msg;
 		}

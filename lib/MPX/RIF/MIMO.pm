@@ -248,7 +248,7 @@ sub cygpath {
 
 =head2 my $winpath=cyg2win($nixPath);
 
-Quick,dirty and fast!
+Quick, dirty and fast!
 
 I eliminate trailing slash.
 

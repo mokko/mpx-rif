@@ -5,21 +5,23 @@ use warnings;
 use Log::Handler;
 use XML::LibXML;
 use File::Copy;
+use YAML::Syck;
+use FindBin;
+use File::Spec;
+
+use Getopt::Std;
+getopts( 'c:d', my $opts = {} );
 
 sub debug;
 
-my $debug  = 1;
-my $config = {
-
-	#logfile: path where log is to be stored (inside tempdir)
-	logfile => 'MIMO-resmvr.log',
-
-	#path where big mpx file lies
-	mpx => '/home/Mengel/projects/Salsa_OAI2/data/source/MIMO-May-Export.mpx',
-
-	#path where images and log will be stored
-	tempdir => '/home/Mengel/temp',
-};
+#my $config = {
+#logfile: path where log is to be stored (inside tempdir)
+#	logfile => 'MIMO-resmvr.log',
+#path where big mpx file lies
+#mpx => '/home/Mengel/projects/Salsa_OAI2/data/source/MIMO-May-Export.mpx',
+#path where images and log will be stored
+#	tempdir => '/home/Mengel/temp',
+#};
 
 =head1 NAME
 
@@ -27,7 +29,11 @@ MIMO-resmvr.pl
 
 =head2 SYNOPSIS
 
-MIMO-resmvr.pl
+MIMO-resmvr.pl [-d] conf/default.yml file.mpx
+
+	TODO:
+	-p is a plan only. No file is actually copied.
+
 
 =head1 DESCRIPTION
 
@@ -66,15 +72,39 @@ separate script.
 
 =cut
 
-debug "Debog mode on";
+#
+# command line sanity
+#
+
+if ( !$opts->{d} ) {
+	$opts->{d} = 0;
+}
+debug "Debug mode on";
+
+#-c or default: conf/$USER.yml
+my $config = loadConfig( $opts->{c} );
+
+if ( !$ARGV[0] ) {
+	print "Error: Need an mpx file!\n";
+	exit 1;
+}
+
+if ( !-f $ARGV[0] ) {
+	print "Error: Mpx file not found!\n";
+	exit 1;
+}
 
 # INIT LOG
 my $log = init_log();
 
 # INIT MPX
-my $xpc   = init_mpx();
+my $xpc   = init_mpx( $ARGV[0] );
 my $xpath = '/mpx:museumPlusExport/mpx:multimediaobjekt'
   . '[mpx:verknüpftesObjekt and mpx:multimediaPfadangabe]';
+
+#
+# MAIN
+#
 
 # LOOP THRU multimediaobjekte
 my @nodes = $xpc->findnodes($xpath);
@@ -113,10 +143,11 @@ foreach my $node (@nodes) {
 	}
 
 	if ( !$pfad && $datei && $erweiterung ) {
-		my $msg="Path not complete for mulId $mulId";
+		my $msg = "Path not complete for mulId $mulId";
 		debug $msg;
 		log->warning($msg);
 	} else {
+
 		#path is fullpath as specified in MuseumPlus
 		#I currently assume that it is always as windows path
 		my $path = $pfad . '\\' . $datei . '.' . $erweiterung;
@@ -145,7 +176,7 @@ foreach my $node (@nodes) {
 
 sub debug {
 	my $msg = shift;
-	if ( $debug > 0 ) {
+	if ( $opts->{d} > 0 ) {
 		print $msg. "\n";
 	}
 }
@@ -178,24 +209,60 @@ sub init_log {
 }
 
 sub init_mpx {
+	my $file = shift;
 
-	if ( !$config->{mpx} ) {
-		print "mpx config missing\n";
+	die "Internal Error: init_mpx called without file" if (!$file);
+
+	if ( !-e $file ) {
+		print "Error: $file does not exist";
 		exit 1;
 	}
 
-	if ( !-f $config->{mpx} ) {
-		print "mpx file not found\n";
-		exit 1;
-	}
-
-	debug "About to load $config->{mpx}";
+	debug "About to load mpx file ($file)";
 
 	my $parser = XML::LibXML->new();
-	my $doc    = $parser->parse_file( $config->{mpx} );
+	my $doc    = $parser->parse_file($file);
 	my $xpc    = registerNS($doc);
 	debug "mpx successfully initialized";
 	return $xpc;
+}
+
+sub loadConfig {
+	my $optc = shift;
+
+	#default:conf/$user.yml
+	if ( !$ENV{USER} ) {
+		$ENV{USER} = 'USER';
+		debug "Environment variable 'USER' not defined. Assume USER";
+	}
+
+	#default
+	my $file =
+	  File::Spec->catfile( $FindBin::Bin, '..', 'conf', $ENV{USER} . '.yml' );
+
+	#overwrite default if -c
+	if ( $optc ) {
+		$file = $optc;
+	}
+
+	debug "Trying to load $file";
+
+	if ( !-e $file ) {
+		print "Error: Configuration file does not exist!\n";
+		exit 1;
+	}
+
+
+	my $config = LoadFile($file) or die "Cannot load config file";
+
+	if ( !$config->{resourceMover} ) {
+		print "Error: Configuration loaded, but no resourceMover info!\n";
+		exit 1;
+	}
+
+	return $config->{resourceMover};
+	debug $config->{tempdir};
+
 }
 
 sub registerNS {
@@ -207,7 +274,7 @@ sub registerNS {
 
 =head2 my $nix=cygpath ($win);
 
-Convert path from windows to unix.
+Convert path from windows to unix. VERY slow and VERY annoying.
 
 =cut
 
@@ -216,13 +283,13 @@ sub cygpath {
 
 	if ( !$in ) {
 		die "cypath called without path";
-
-		#not sure
-		return ();
+		return ();    #not sure which is better
 	}
 	my $out = `cygpath '$in'`;
-	$out =~ s/\s$//;
+	chomp $out;
 
 	#print '!'.$out."!";
 	return $out;
 }
+
+#sub win2unix

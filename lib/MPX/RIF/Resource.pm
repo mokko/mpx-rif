@@ -8,7 +8,7 @@ use warnings;
 
 MPX::RIF::Resource
 
-...hide the dirty work with the $data hashref
+...hide the dirty work with the $data hashref in the resource object.
 
 For use inside MPX::RIF. MPX::RIF's end user shouldn't need this.
 

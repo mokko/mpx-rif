@@ -121,22 +121,65 @@ sub parsedir {
 
 =head2 my $identNr=identNr($file);
 
+identNr expects a filename. It will try to extract the identNr from it. On
+failure?
+
+Currently we are looking for identNr with 4/5 elements
+1) A roman literal from I - VII. Roman literal typically indicates the
+   department. Required.
+2) A letter, combination of letters or nls (including variants of nls)
+   This element typically indicates a broad geographic area within the
+   territory the department is responsible for. Or that is number is
+   unknown. Required.
+3) an integer. Required.
+4) a letter or combinations of letters typically indicating the parts
+   of the object. Optional
+5) Sometimes identNrs are not unique and there is nothing you can change
+   about that. In this case they are differentiated by <1>, <2> etc.
+   Optional
+
+$x =~/a|b/; either a or b
+$x =~/a|b|/; either a or b or nothing
+$x =~/(A)sep(B)sep(C)sep|(?(D)sep)||(E)||/; ; #now c is optional, right?
+
+
 =cut
 
 sub identNr {
 	my $file = shift;
 
-	$file =~ /(VII|I|III)[_|\s]
-	       ([a-f]|nls|[a-f] nls)[_|\s]
-	       (\d+)[_|\s|\.|\-\w|]
-	       ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-h]|)/xi;
+	$file =~ /
+#1st element: VII
+			(I|II|III|IV|V|VI|VII)
+				[_|\s]
+#2nd element: c
+	     	([a-f]|nls|[a-f] nls)
+	       		[_|\s]
+#3rd element: 1234
+	       	(\d+)
+				#sep. could also be dot, but has to be there
+	       		[_|\s|\.]
+#4th element: a
+			#non-matching group: (?:regexp)
+			(?:
+	        ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-h])
+				#separator only if there is a 4th element
+	       		[_|\s|\.]||)
+#5th element: <1>
+			(\d?)
+	       /xi;
 
 	#three parts are required
 	if ( !( $1 && $2 && $3 ) ) {
-		log " +identNr: Cannot identify $file";
+		my $msg=" +identNr: Cannot extract identNr from $file";
+		log $msg;
+		debug $msg;
 	} else {
+		#required
 		my $identNr = uc($1) . ' ' . $2 . ' ' . $3;
+		#optional
 		$identNr .= ' ' . $4 if $4;
+		$identNr .= ' <' . $5 .'>' if $5;
 		debug " +identNr: $identNr";
 		return $identNr;
 
@@ -215,13 +258,22 @@ sub pref {
 	return 1;
 }
 
+=head2 my $freigabe_str=freigabe ($file);
+
+Parses the file name for -x signalling that it should be released on the web.
+Expects filename and returns the string "web". If it doesn't find the signal
+it returns empty.
+
+=cut
+
 sub freigabe {
 	my $file = shift;
 
-	if ( $file =~ / x\.\w+$/ ) {
+	if ( $file =~ / x\.\w+$/i ) {
 		debug " +freigabe";
 		return "web";
 	}
+	return;
 }
 
 =head2 my $winpath=cygpath($nixPath);
@@ -264,8 +316,7 @@ sub cyg2win {
 		$path =~ s!/!\\!g;
 		my $win = "$drive:\\$path";
 
-		#debug "cyg2win-nix: $nix";
-		debug "cyg2win: $win";
+		#debug "cyg2win: $win";
 		return $win;
 	}
 }

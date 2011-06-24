@@ -10,7 +10,7 @@ use MPX::RIF;
 
 
 my $opts = {};
-getopts( 'b:ds:t', $opts );
+getopts( 'b:ds:tv', $opts );
 
 #-s 1 - stop after scandir
 #-s 2 - stop after dirparser
@@ -45,7 +45,7 @@ if ( $opts->{b} ) {
 	$config->{BEGIN}=$opts->{b};
 }
 
-if ( $opts->{d} ) {
+if ( $opts->{d} or $opts->{v} ) {
 	$config->{DEBUG} = 1;
 }
 

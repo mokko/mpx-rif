@@ -65,7 +65,7 @@ sub init_debug {
 
 =head2 MPX::RIF::Helper::init_log($logfile);
 
-	$logfile is optional
+	$logfile is optional.
 
 =cut
 
@@ -87,6 +87,36 @@ sub init_log {
 			minlevel => 0
 		}
 	);
+}
+
+
+=head2 unlink_log ($logfile);
+
+Deletes logfile, e.g. before init. Returns success on success.
+
+=cut
+
+
+sub unlink_log {
+	my $file=shift;
+	my $default = "mpx-rif.log";
+
+	if ( !$file ) {
+		$file = $default;
+	}
+
+	debug "Enter unlink_log ($file)";
+
+
+	if (-f $file) {
+		#debug "about to unlink logfile $file";
+		unlink $file or warn "cannot delete old file $!";
+		return 1 unless $!;
+		return if $!;
+	} else {
+		debug "logfile does not exist so nothing to do $file";
+	}
+
 }
 
 1;

@@ -42,7 +42,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -120,7 +120,9 @@ sub new {
 	#check if config makes sense
 	$self->_config();
 
-	log "START";
+	#delete log file
+
+	log "lookup file: ". $self->{lookup};
 
 	return $self;
 }
@@ -141,7 +143,6 @@ sub lookupObjId {
 		  . 'specified!';
 	}
 
-	#debug "Enter lookupObjId";
 
 	# loop over all resources
 	# at this point I should NOT need to check anymore if
@@ -151,13 +152,14 @@ sub lookupObjId {
 		my $identNr  = $resource->get('identNr');
 		if ($identNr) {
 			my $objId = $self->_lookupObjId($identNr);
-
 			#take out the identNr, not needed anymore!
+			debug "lookup $identNr";
 			delete $resource->{identNr};
 
 			if ($objId) {
 				$resource->addFeatures( 'verknüpftesObjekt' => $objId );
 			}
+
 		}
 		$self->_storeResource($resource);
 	}
@@ -241,12 +243,13 @@ sub _lookupObjId {
 	#werden
 	my @nodes =
 	  $doc->findnodes( "mpx:museumPlusExport/mpx:sammlungsobjekt"
-		  . "[mpx:identNr = '$identNr' and art != 'Ident. Unternummer']/\@objId"
+		  . "[mpx:identNr = '$identNr'][mpx:identNr/\@art != 'Ident. Unternummer']/\@objId"
 	  );
 
 	#return empty handed if no objId found
 	if ( !@nodes ) {
-
+		my $msg = "'$identNr' not found, objId missing";
+		log $msg;
 		#debug "xpath returns zero nodes";
 		return ();
 	}
@@ -260,7 +263,7 @@ sub _lookupObjId {
 
 	#debug "nodes found" . scalar @nodes;
 	my $objId = $nodes[0]->string_value();
-	debug "ObjId IDENTIFIED $objId";
+	debug "\tIDENTIFIED $objId";
 
 	return $objId;
 }
@@ -678,12 +681,13 @@ sub _addCLI {
 	#	$self->{VERBOSE} = $opts->{VERBOSE};
 	#}
 
-	MPX::RIF::Helper::init_log();
-
 	if ( $opts->{DEBUG} ) {
 		MPX::RIF::Helper::init_debug();
 		debug "Debug mode on";
 	}
+
+	MPX::RIF::Helper::unlink_log();
+	MPX::RIF::Helper::init_log();
 
 	if ( $opts->{BEGIN} ) {
 		$self->{BEGIN} = $opts->{BEGIN};

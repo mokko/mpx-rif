@@ -8,6 +8,7 @@ use File::Copy;
 use YAML::Syck;
 use FindBin;
 use File::Spec;
+use Image::Magick;
 
 use Getopt::Std;
 getopts( 'c:d', my $opts = {} );
@@ -29,7 +30,7 @@ MIMO-resmvr.pl
 
 =head2 SYNOPSIS
 
-MIMO-resmvr.pl [-d] conf/default.yml file.mpx
+MIMO-resmvr.pl [-d] file.mpx
 
 	TODO:
 	-p is a plan only. No file is actually copied.
@@ -119,6 +120,7 @@ debug 'found ' . scalar @nodes . " nodes";
 
 foreach my $node (@nodes) {
 	my $node  = registerNS($node);
+
 	my @arr   = $node->findnodes('@mulId');
 	my $mulId = $arr[0]->string_value();
 
@@ -126,53 +128,125 @@ foreach my $node (@nodes) {
 		die "Error: no mulId";
 	}
 
+	my ($win, $erweiterung) = getPath($node);
+	if (!$win) {
+		my $msg = "Path not complete for mulId $mulId";
+		debug $msg;
+		log->warning($msg);
+		next; #untested
+
+	}
+
+	#convert to nix for cygwin
+	#my $path = cygpath($win);
+	my $path = win2cyg($win);
+
+	#new filename
+	my $new = $config->{tempdir} . '/' . $mulId . '.' . lc($erweiterung);
+	debug "$path --> $new";
+
+	#test if resource is found, log warning if not
+	if ( !-f "$path" ) {
+		$log->warning("Resource not found:$path");
+	} else {
+		debug 'er'.lc($erweiterung);
+		if (lc($erweiterung) eq 'jpg') {
+			resizeJpg ($path,$new);
+		} else {
+			copy( $path, $new );
+		}
+	}
+}
+
+
+#
+# SUBs
+#
+
+=head2 resizeJpg ($old, $new);
+
+Expects two file paths: the current location and the new location. It will
+check if image is bigger 800 px in either width or length. The new version
+will be limited to 800 px.
+
+I assume I already tested if $old exists and get here only if it does.
+
+=cut
+
+sub resizeJpg {
+	my $old=shift;
+	my $new=shift;
+
+	debug "Enter resizeJpg";
+
+	if (!$old) {
+		die "resizeJpg: no file name old!";
+	}
+
+	if (!$new) {
+		die "resizeJpg: no file name new!";
+	}
+
+	my $p=new Image::Magick;
+	my ($width, $height, $size, $format) = $p->Ping($old);
+
+	if ($width > 800 or $height > 800) {
+		debug "downsize image";
+		$p->Read ($old);
+		$log->warning("Resize $old");
+		$p->AdaptiveResize(geometry=>'800x800');
+		$p->Write ($new);
+	} else {
+		#if size ok just cp to new location
+		copy( $old, $new );
+	}
+}
+
+=head2 my ($path, $erweiterung)=getPath($node);
+
+	returns full paths as saved in MPX, typically
+	M:\\bla\bli\blu\file.jpg
+
+=cut
+
+sub getPath {
+	my $node = shift;
+	my @arr;
+
+	if ( !$node ) {
+		die "extractPathFromMume called without node";
+	}
+
 	my ( $pfad, $datei, $erweiterung );
 	@arr = $node->findnodes('mpx:multimediaPfadangabe');
 	if ( $arr[0] ) {
 		$pfad = $arr[0]->string_value();
+		$pfad =~ s,\s*$,,;
 	}
 
 	@arr = $node->findnodes('mpx:multimediaDateiname');
 	if ( $arr[0] ) {
 		$datei = $arr[0]->string_value();
+		$datei =~ s,\s*$,,;
 	}
 
 	@arr = $node->findnodes('mpx:multimediaErweiterung');
 	if ( $arr[0] ) {
 		$erweiterung = $arr[0]->string_value();
+		$erweiterung =~ s,\s*$,,;
 	}
 
-	if ( !$pfad && $datei && $erweiterung ) {
-		my $msg = "Path not complete for mulId $mulId";
-		debug $msg;
-		log->warning($msg);
-	} else {
+	if ( $pfad && $datei && $erweiterung ) {
 
 		#path is fullpath as specified in MuseumPlus
 		#I currently assume that it is always as windows path
 		my $path = $pfad . '\\' . $datei . '.' . $erweiterung;
-
-		#convert to nix for cygwin
-		$path = cygpath($path);
-
-		#new filename
-		my $new = $config->{tempdir} . '/' . $mulId . '.' . lc($erweiterung);
-		debug "$path --> $new";
-
-		#test if resource is found, log warning if not
-		if ( !-f $path ) {
-			$log->warning("Resource not found:$path");
-		} else {
-			copy( $path, $new );
-		}
+		#debug "getPATH: $path;";
+		return $path, $erweiterung;
 	}
 
-	#alternatively I could make it ftp it to the right place
+	return;
 }
-
-#
-# SUBs
-#
 
 sub debug {
 	my $msg = shift;
@@ -211,7 +285,7 @@ sub init_log {
 sub init_mpx {
 	my $file = shift;
 
-	die "Internal Error: init_mpx called without file" if (!$file);
+	die "Internal Error: init_mpx called without file" if ( !$file );
 
 	if ( !-e $file ) {
 		print "Error: $file does not exist";
@@ -241,7 +315,7 @@ sub loadConfig {
 	  File::Spec->catfile( $FindBin::Bin, '..', 'conf', $ENV{USER} . '.yml' );
 
 	#overwrite default if -c
-	if ( $optc ) {
+	if ($optc) {
 		$file = $optc;
 	}
 
@@ -251,7 +325,6 @@ sub loadConfig {
 		print "Error: Configuration file does not exist!\n";
 		exit 1;
 	}
-
 
 	my $config = LoadFile($file) or die "Cannot load config file";
 
@@ -292,4 +365,31 @@ sub cygpath {
 	return $out;
 }
 
-#sub win2unix
+=head2 my $cyg=win2cyg($win);
+
+very simple re-implementation of cygpath. untested
+
+=cut
+
+sub win2cyg {
+	my $win = shift;
+	#debug "WIN: '$win'";
+
+	my $drive;
+	{
+		$win =~ /(\w):\\/;
+		if ($1) {
+			$drive = $1;
+		} else {
+			die "win2cyg: Drive not recognized!";
+		}
+	}
+
+	my $path = ( split /:\\/, $win )[-1];
+	$path =~ tr,\\,/,;
+	my $cyg = "/cygdrive/$drive/$path";
+	#debug "CYG: $cyg!";
+	return $cyg;
+
+}
+

@@ -1,6 +1,6 @@
 package MPX::RIF::Helper;
 
-#I put here stuff that I want to inherit from elsewhere in MPX::RIF
+# ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
 
 use Exporter;
 use Log::Handler;

@@ -1,4 +1,5 @@
 package MPX::RIF;
+# ABSTRACT: Resource Information Faker - build cheap mpx from filenames etc.
 
 use warnings;
 use strict;
@@ -6,8 +7,6 @@ use utf8;
 use FindBin;
 use Carp qw(croak carp);
 use File::Find::Rule;
-
-#use IO::File;
 
 use lib "$FindBin::Bin/../lib";
 use MPX::RIF::Helper qw(debug log);
@@ -31,18 +30,6 @@ our $temp = {
 	4 => '4-filter.yml',
 	5 => 'mume.mpx'
 };
-
-=head1 NAME
-
-MPX::RIF - The great new MPX::RIF!
-
-=head1 VERSION
-
-Version 0.01
-
-=cut
-
-our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -77,6 +64,24 @@ information (XML).
 	#Everything else is considered to be the private parts of this module.
 	#For more info see the method run (overview) and the individual methods.
 
+
+=head1 RATIONALE
+
+There are many images. It can take a long to enter them manually in the
+database. For each item, there are many repetitive information items, e.g. 1000
+fotos were made by the same fotographer.
+
+This little perl tool parses a directory and writes XML/MPX with the metadata.
+It is good with repetative metadata. Of course, this is not a silver bullett.
+It is a just a cheap solution that works only if you know your photos well.
+
+The whole process is broken down in several consecutive steps. State
+information is dumped a couple of times during executing as yaml, to
+facilitate proof-reading and error checking. There are debug messages and log
+messages which should help you finding quirks in your data.
+
+The tool is configurable. It's written in a haste i.e. no great code, but
+it should at least be readable.
 
 =head1 SUBROUTINES/METHODS
 

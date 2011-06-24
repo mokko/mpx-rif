@@ -1,4 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
+
+# PODNAME: mpx-rif.pl
+# ABSTRACT: command line frontend for MPX::RIF
 
 use strict;
 use warnings;
@@ -70,23 +73,21 @@ if ( $opts->{t} ) {
 my $faker = MPX::RIF->new($config);
 $faker->run();
 
-=head1 NAME
-
-mpx-rif.pl
 
 =head2 SYNOPSIS
 
 mpx-rif.pl -d conf/MIMO.yml
 
--d
+=for :list
 
+*-d
 	print lots of debug info to STDOUT while executing
 
--b 1
+*-b 1
 
 	begin with step 1
 
--s 1
+*-s 1
 
 	stop after step 1
 

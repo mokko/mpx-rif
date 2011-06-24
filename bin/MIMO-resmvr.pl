@@ -1,4 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
+
+# PODNAME: MIMO-resmvr.pl
+# ABSTRACT: resource mover for MIMO
 
 use strict;
 use warnings;
@@ -24,11 +27,7 @@ sub debug;
 #	tempdir => '/home/Mengel/temp',
 #};
 
-=head1 NAME
-
-MIMO-resmvr.pl
-
-=head2 SYNOPSIS
+=head1 SYNOPSIS
 
 MIMO-resmvr.pl [-d] file.mpx
 
@@ -163,7 +162,7 @@ foreach my $node (@nodes) {
 # SUBs
 #
 
-=head2 resizeJpg ($old, $new);
+=func resizeJpg ($old, $new);
 
 Expects two file paths: the current location and the new location. It will
 check if image is bigger 800 px in either width or length. The new version
@@ -202,7 +201,7 @@ sub resizeJpg {
 	}
 }
 
-=head2 my ($path, $erweiterung)=getPath($node);
+=func my ($path, $erweiterung)=getPath($node);
 
 	returns full paths as saved in MPX, typically
 	M:\\bla\bli\blu\file.jpg
@@ -248,12 +247,25 @@ sub getPath {
 	return;
 }
 
+=func debug 'message';
+
+print debug messages to STDOUT. A newline is added at the end of every debug
+message.
+
+=cut
+
 sub debug {
 	my $msg = shift;
 	if ( $opts->{d} > 0 ) {
 		print $msg. "\n";
 	}
 }
+
+=func init_log ($tempdir);
+
+Return value?
+
+=cut
 
 sub init_log {
 	if ( !$config->{tempdir} ) {
@@ -282,6 +294,12 @@ sub init_log {
 
 }
 
+=func $xpc=init_mpx ('path/to/mpx');
+
+Opens mpx file with LibXML and registers namespace mpx.
+
+=cut
+
 sub init_mpx {
 	my $file = shift;
 
@@ -301,6 +319,18 @@ sub init_mpx {
 	return $xpc;
 }
 
+=func loadConfig ($opts)
+
+If no $opts are specified, loads config values from a yml file. That
+file spec is guessed based on user name:
+	conf/$user.yml
+
+If $opts is specified, it will not look at that location, but try to load
+the conf file directory from that location.
+
+Only subvalues of 'resourceMover' are returned.
+
+=cut
 sub loadConfig {
 	my $optc = shift;
 
@@ -338,6 +368,8 @@ sub loadConfig {
 
 }
 
+=func my $xpc=registerNS ($doc);
+=cut
 sub registerNS {
 	my $doc = shift;
 	my $xpc = XML::LibXML::XPathContext->new($doc);
@@ -347,7 +379,8 @@ sub registerNS {
 
 =head2 my $nix=cygpath ($win);
 
-Convert path from windows to unix. VERY slow and VERY annoying.
+DEPRECATED. Convert path from windows to unix. VERY slow and VERY annoying.
+Not used anymore. See win2cyg instead.
 
 =cut
 
@@ -367,7 +400,7 @@ sub cygpath {
 
 =head2 my $cyg=win2cyg($win);
 
-very simple re-implementation of cygpath. untested
+very simple re-implementation of cygpath.
 
 =cut
 
@@ -392,4 +425,3 @@ sub win2cyg {
 	return $cyg;
 
 }
-

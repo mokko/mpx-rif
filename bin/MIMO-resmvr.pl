@@ -192,10 +192,13 @@ sub resizeJpg {
 	if ($width > 800 or $height > 800) {
 		debug "downsize image";
 		$p->Read ($old);
-		$log->warning("Resize $old");
+		$log->warning("Downsize $old");
 		$p->AdaptiveResize(geometry=>'800x800');
 		$p->Write ($new);
 	} else {
+		if ($width < 800 && $height < 800) {
+			$log->warning("image $old is smaller than 800 px");
+		}
 		#if size ok just cp to new location
 		copy( $old, $new );
 	}

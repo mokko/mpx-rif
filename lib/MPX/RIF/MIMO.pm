@@ -85,7 +85,7 @@ sub parsedir {
 	}
 
 	#identNr
-	my $identNr = identNr($file);
+	my $identNr = identNr( $file, $directories );
 	if ($identNr) {
 		$resource->addFeatures( identNr => $identNr );
 	}
@@ -130,11 +130,12 @@ Currently we are looking for identNr with 4/5 elements
 2) A letter, combination of letters or nls (including variants of nls)
    This element typically indicates a broad geographic area within the
    territory the department is responsible for. Or that is number is
-   unknown. Required.
-3) an integer. Required.
-4) a letter or combinations of letters typically indicating the parts
+   unknown. Required, except in VI.
+3) 'Dlg'. Optional.
+4) an integer. Required.
+5) a letter or combinations of letters typically indicating the parts
    of the object. Optional
-5) Sometimes identNrs are not unique and there is nothing you can change
+6) Sometimes identNrs are not unique and there is nothing you can change
    about that. In this case they are differentiated by <1>, <2> etc.
    Optional
 
@@ -142,49 +143,103 @@ $x =~/a|b/; either a or b
 $x =~/a|b|/; either a or b or nothing
 $x =~/(A)sep(B)sep(C)sep|(?(D)sep)||(E)||/; ; #now c is optional, right?
 
-
 =cut
 
 sub identNr {
 	my $file = shift;
+	my $path = shift;
 
 	$file =~ /
 #1st element: VII
 			(I|II|III|IV|V|VI|VII)
 				[_|\s]
-#2nd element: c
-	     	([a-f]|nls|[a-f] nls)
-	       		[_|\s]
-#3rd element: 1234
+#2nd element: c C Ca (optional)
+	     	(?:([A-Za-z]|nls|[A-Za-z]{1,2} nls)
+	       		[_|\s]||)
+#3rd element: Dlg (optional)
+			(?:
+	     	([A-Za-z]{1,2}|nls|[A-Za-z]{1,2} nls)
+	       		[_|\s]||)
+#4th element: 1234
 	       	(\d+)
 				#sep. could also be dot, but has to be there
 	       		[_|\s|\.]
-#4th element: a
+#5th element: a
 			#non-matching group: (?:regexp)
 			(?:
 	        ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-h])
 				#separator only if there is a 4th element
 	       		[_|\s|\.]||)
-#5th element: <1>
+#6th element: <1>
 			(\d?)
 	       /xi;
 
-	#three parts are required
-	if ( !( $1 && $2 && $3 ) ) {
-		my $msg=" +identNr: Cannot extract identNr from $file";
-		log $msg;
-		debug $msg;
-	} else {
-		#required
-		my $identNr = uc($1) . ' ' . $2 . ' ' . $3;
-		#optional
-		$identNr .= ' ' . $4 if $4;
-		$identNr .= ' <' . $5 .'>' if $5;
-		debug " +identNr: $identNr";
-		return $identNr;
+	#VALIDATION
+	#so far we have been a bit too permissive, now we need to test
+	#various conditions and report on failure
+	#1) Signaturen mit VI am Anfang haben entweder nls als zweiten Teil oder
+	#   keinen zweiten Teil. OK
+	#2) zweiter Teil hat immer Grossbuchstaben außer bei VIIer und VIer
 
+	#we always need these parts
+	if ( !( $1 && $4 ) ) {
+		return identErr( 'not 1 and 4', $file, $path );
 	}
-	return ();    #otherwise might return 1 for success
+
+	#test existence of 2 where it has to be
+	#all except $1='VI' need $2
+	if ( $1 ne 'VI' && ( !$2 ) ) {
+		return identErr( "2 not where it should be: $2", $file, $path );
+	}
+
+	#uppercase for 2
+	if ( ( $1 ne 'VII' ) and ( $1 ne 'VI' ) ) {
+		if ( $2 !~ /[A-Z]{1,2}/ ) {
+			return identErr( "no uppercase for 2 $2", $file, $path );
+		}
+	}
+
+	#lowercase for 2
+	if ( $1 eq 'VII' ) {
+		if ( $2 !~ /[a-z]{1,2}/ ) {
+			return identErr( "no lowercase for 2 $2", $file, $path );
+		}
+	}
+
+	#
+	# JOINING
+	#
+
+	#required VI
+	my $identNr = $1 . ' ';
+
+	#optional a
+	$identNr .= $2 . ' ' if $2;
+
+	#optional Dlg
+	$identNr .= $3 . ' ' if $3;
+
+	#required 1234
+	$identNr .= $4 . ' ';
+
+	#optional a-c
+	$identNr .= $5 . ' ' if $5;
+
+	#optional <1>
+	$identNr .= ' <' . $6 . '>' if $6;
+
+	debug " +identNr: $identNr";
+	return $identNr;
+}
+
+sub identErr {
+	my $msg  = shift;
+	my $file = shift;
+	my $path = shift;
+
+	my $msg = " +identNr: Cannot extract identNr from $file\n   $path";
+	log $msg;
+	debug $msg;
 }
 
 =head2 my $urheber=fotograf($dirs);
@@ -322,7 +377,7 @@ sub cyg2win {
 }
 
 sub alpha2num {
-	my $in=shift;
+	my $in = shift;
 
 	my %tr = (
 		A => 1,

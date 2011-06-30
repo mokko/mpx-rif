@@ -237,7 +237,9 @@ sub identErr {
 	my $file = shift;
 	my $path = shift;
 
-	my $msg = " +identNr: Cannot extract identNr from $file\n   $path";
+	$msg = " +identNr: Cannot extract identNr from $file\n"
+	  . "   $path\n"
+	  . "   $msg";
 	log $msg;
 	debug $msg;
 }
@@ -298,7 +300,7 @@ sub pref {
 	if ( $file =~ /-([A-Z]).*\.\w+$/ ) {
 		$pref = $1;
 
-		#debug "letter: $1";
+		#debug " letter : $1 ";
 		$pref = alpha2num($pref);
 		debug " +pref $pref";
 		if ( $pref !~ /\d+/ ) {

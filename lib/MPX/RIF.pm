@@ -4,25 +4,26 @@ package MPX::RIF;
 
 use warnings;
 use strict;
-use utf8;
 use FindBin;
-use Carp qw(croak carp);
-use File::Find::Rule;
-use HTTP::OAI;
-
 use lib "$FindBin::Bin/../lib";
+
+use Carp qw(croak carp);
+use Cwd qw (realpath);
+use Date::Manip;
+use File::Find::Rule;
+use File::Spec;
+use HTTP::OAI;
 use MPX::RIF::Helper qw(debug log);
 use MPX::RIF::Resource;
-
-#works also with XML::Syck in case that is easier to install
-use YAML::XS qw (LoadFile DumpFile);
-
-use Date::Manip;
 use Time::HiRes qw(gettimeofday);    #to generate unique tokens
 use SOAP::DateTime;
-
+use utf8;
 use XML::LibXML;
 use XML::Writer;
+use XML::LibXSLT;
+use YAML::XS qw (LoadFile DumpFile);
+
+#works also with XML::Syck in case that is easier to install
 
 #TODO: more config
 our $temp = {
@@ -160,7 +161,6 @@ sub lookupObjId {
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
 		my $identNr  = $resource->get('identNr');
-		$identNr=~s/\s*$//;
 		if ($identNr) {
 			my $objId = $self->_lookupObjId($identNr);
 
@@ -262,7 +262,6 @@ sub _lookupObjId {
 	if ( !@nodes ) {
 		my $msg = "'$identNr' not found, objId missing";
 		log $msg;
-
 		#debug "xpath returns zero nodes";
 		return ();
 	}
@@ -313,42 +312,8 @@ sub parsedir {
 
 =head2 $faker->run();
 
-Executes all steps one after according to configuration.
-
-The steps are
- (1) scandir - Read the directory specified in configuration recursively,
-               filter files of one or several types (extensions), write
-               the resulting file list in the resource store, dump the
-               store (containing the file list) as yaml (for debugging
-               purposes).
-               If option STOP=1 is specified the MPX::RIF will exit here.
-
- (2) parsedir - Parse the filepath for information. This is done in an external
- 			   module since it is very specific to the project, e.g. different
- 			   for MIMO than for 78s. The result is saved in the resource
- 			   store and dumped to yaml for debugging.
-
- (3) objIdloopup - To add the metadata of the resource store to existing mpx
- 			   data we need to add the right objId to each multimediaObjekt.
- 			   We look this information up in one big xml file which should
- 			   contain all exported Sammlungsobjekte.
-
- 			   I will probably need to write yet another script that dumps such
- 			   a complete mpx file from the OAI data provider.
-
- 			   Resource store is dumped as yaml to check if this step was
- 			   successful.
-
- (4) filter - If a resource lacks one of a list of required features, the
-			   resource is dropped (deleted) form the resource store.
-
- (5) writeXML - The resource store is converted to XML-MPX or more precisely to
- 			   multimediaobjekt-records. The resulting file will be manually
- 			   inserted into existing big mpx file and (re)imported in the OAI
- 			   data provider. (Alternatively, I could write a variant of the
- 			   digester which digests mulitmediaobjekte.)
-
- (6) validate - validate XML and check for duplicate mulId
+Executes all steps one after according to configuration. See mpx-rif.pl for
+high-level description.
 
 =cut
 
@@ -541,6 +506,7 @@ sub registerNS {
 
 sub writeXML {
 	my $self = shift;
+	my $i=0; #count mume records
 
 	debug "Begin writingXML";
 	my $output;
@@ -604,7 +570,7 @@ sub writeXML {
 				$attributes{'freigabe'} = $freigabe;
 				delete $self->{data}->{$id}->{freigabe};
 			}
-
+			$i++;
 			$writer->startTag( 'multimediaobjekt', %attributes );
 
 			#this should be elsewhereş
@@ -624,12 +590,15 @@ sub writeXML {
 	$writer->endTag('museumPlusExport');
 	$writer->end();
 
+	log "$i mume records written";
+
 	debug "about to write XML";
 	open( my $fh, '>:encoding(UTF-8)', $temp->{5} ) or die $!;
 	print $fh $output;
 	close $fh;
-	$self->stop(5);
 
+
+	$self->stop(5);
 	$self->{output} = $output;
 }
 
@@ -694,7 +663,7 @@ sub _addCLI {
 	#	$self->{VERBOSE} = $opts->{VERBOSE};
 	#}
 	if ( $opts->{NOHARVEST} ) {
-		$self->{NOHARVEST}=1;
+		$self->{NOHARVEST} = 1;
 	}
 
 	if ( $opts->{DEBUG} ) {
@@ -1024,10 +993,10 @@ sub _getResource {
 }
 
 sub _harvest {
-	my $self   = shift or return;
+	my $self = shift or return;
 	my $mpx_fn = $self->{lookup};
 
-	if ($self->{NOHARVEST}) {
+	if ( $self->{NOHARVEST} ) {
 		debug "NOHARVEST switch actived. Will not attempt to harvest";
 		return;
 	}
@@ -1056,9 +1025,28 @@ sub _harvest {
 
 	if ( !$response->is_error ) {
 		debug "About to write harvest to $mpx_fn";
+
+		my $unwrapFN = realpath(
+			File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
+		if (!-f $unwrapFN) {
+			die "$unwrapFN not cound. Check bin../xsl/unwrap.xsl";
+		}
+
+		my $xslt      = XML::LibXSLT->new();
+		my $style_doc = XML::LibXML->load_xml(
+			location => $unwrapFN,
+			no_cdata => 1
+		);
+		my $stylesheet = $xslt->parse_stylesheet($style_doc);
+
+		#now dom
+		$response = $stylesheet->transform( $response->toDOM );
+
 		open( my $fh, '> ', $mpx_fn )
 		  or die 'Error: Cannot write to file:' . $mpx_fn . '! ' . $!;
-		print $fh $response->toDOM->toString;
+		#test if output_as_bytes results in better indent
+		#print $fh $response->output_as_bytes
+		print $fh $response->toString;
 		close $fh;
 	}
 }

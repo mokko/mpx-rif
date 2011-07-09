@@ -1,7 +1,7 @@
 *.stackdump
 *~
 *.yml
-#*
+\#*
 1-*.yml
 2-*.yml
 3-*.yml

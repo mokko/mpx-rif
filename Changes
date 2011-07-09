@@ -1,5 +1,12 @@
 Revision history for MPX-RIF
 
-0.01    Date/time
-        First version, released on an unsuspecting world.
+*0.04	identNr was not trimmed
+		no harvester included
+		there is another bug that prevents correct lookup
+
+0.03    2011-07
+        now downsizes pictures automatically when to big and warns when
+        to small.
+
+
 

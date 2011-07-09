@@ -211,24 +211,27 @@ sub identNr {
 	#
 
 	#required VI
-	my $identNr = $1 . ' ';
+	my $identNr = $1;
 
 	#optional a
-	$identNr .= $2 . ' ' if $2;
+	$identNr .= ' ' . $2 if ($2);
 
 	#optional Dlg
-	$identNr .= $3 . ' ' if $3;
+	if ($3) {
+		$identNr .= ' ' . $3;
+	}
+
 
 	#required 1234
-	$identNr .= $4 . ' ';
+	$identNr .= ' ' . $4;
 
 	#optional a-c
-	$identNr .= $5 . ' ' if $5;
+	$identNr .= ' ' . $5 if $5;
 
 	#optional <1>
 	$identNr .= ' <' . $6 . '>' if $6;
 
-	debug " +identNr: $identNr";
+	debug " +identNr: '$identNr'";
 	return $identNr;
 }
 
@@ -237,7 +240,8 @@ sub identErr {
 	my $file = shift;
 	my $path = shift;
 
-	$msg = " +identNr: Cannot extract identNr from $file\n"
+	$msg =
+	    " +identNr: Cannot extract identNr from $file\n"
 	  . "   $path\n"
 	  . "   $msg";
 	log $msg;

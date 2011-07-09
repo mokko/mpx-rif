@@ -1,4 +1,5 @@
 package MPX::RIF;
+
 # ABSTRACT: Resource Information Faker - build cheap mpx from filenames etc.
 
 use warnings;
@@ -7,6 +8,7 @@ use utf8;
 use FindBin;
 use Carp qw(croak carp);
 use File::Find::Rule;
+use HTTP::OAI;
 
 use lib "$FindBin::Bin/../lib";
 use MPX::RIF::Helper qw(debug log);
@@ -127,7 +129,7 @@ sub new {
 
 	#delete log file
 
-	log "lookup file: ". $self->{lookup};
+	log "lookup file: " . $self->{lookup};
 
 	return $self;
 }
@@ -143,11 +145,14 @@ sub lookupObjId {
 	my $self   = shift;
 	my $mpx_fn = $self->{lookup};
 
+	#attemp harvest and write new file to disk for debugging
+	#avoid with NOHARVEST or -n
+	$self->_harvest();
+
 	if ( !$mpx_fn ) {
 		die 'ERROR: loopupObjId - cannot execute since no mpx data '
 		  . 'specified!';
 	}
-
 
 	# loop over all resources
 	# at this point I should NOT need to check anymore if
@@ -155,8 +160,10 @@ sub lookupObjId {
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
 		my $identNr  = $resource->get('identNr');
+		$identNr=~s/\s*$//;
 		if ($identNr) {
 			my $objId = $self->_lookupObjId($identNr);
+
 			#take out the identNr, not needed anymore!
 			debug "lookup $identNr";
 			delete $resource->{identNr};
@@ -255,6 +262,7 @@ sub _lookupObjId {
 	if ( !@nodes ) {
 		my $msg = "'$identNr' not found, objId missing";
 		log $msg;
+
 		#debug "xpath returns zero nodes";
 		return ();
 	}
@@ -685,6 +693,9 @@ sub _addCLI {
 	#if ( $opts->{VERBOSE} ) {
 	#	$self->{VERBOSE} = $opts->{VERBOSE};
 	#}
+	if ( $opts->{NOHARVEST} ) {
+		$self->{NOHARVEST}=1;
+	}
 
 	if ( $opts->{DEBUG} ) {
 		MPX::RIF::Helper::init_debug();
@@ -728,7 +739,7 @@ sub _config {
 	#	debug "$_\n   $self->{$_}";
 	#}
 
-	my @mandatory = qw/scandir dirparser/;
+	my @mandatory = qw/scandir dirparser dataProvider/;
 
 	my $err = 0;
 	foreach my $item (@mandatory) {
@@ -1010,6 +1021,46 @@ sub _getResource {
 	#avoid redundant ids in yaml
 	$resource->{id} = $id;
 	return $resource;
+}
+
+sub _harvest {
+	my $self   = shift or return;
+	my $mpx_fn = $self->{lookup};
+
+	if ($self->{NOHARVEST}) {
+		debug "NOHARVEST switch actived. Will not attempt to harvest";
+		return;
+	}
+
+	debug "About to query data provider: $self->{dataProvider}";
+
+	my $harvester =
+	  HTTP::OAI::Harvester->new( baseURL => $self->{dataProvider}, );
+
+	my $response = $harvester->ListRecords(
+		metadataPrefix => 'mpx',
+		set            => 'MIMO',
+	);
+
+	if ( $response->is_error ) {
+		warn( "Error harvesting: " . $response->message . "\n" );
+	}
+
+	while ( my $rt = $response->resumptionToken ) {
+		debug 'harvesting ' . $rt->resumptionToken;
+		$response->resume( resumptionToken => $rt );
+		if ( $response->is_error ) {
+			warn( "Error resuming: " . $response->message . "\n" );
+		}
+	}
+
+	if ( !$response->is_error ) {
+		debug "About to write harvest to $mpx_fn";
+		open( my $fh, '> ', $mpx_fn )
+		  or die 'Error: Cannot write to file:' . $mpx_fn . '! ' . $!;
+		print $fh $response->toDOM->toString;
+		close $fh;
+	}
 }
 
 =head1 AUTHOR

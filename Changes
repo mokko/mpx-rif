@@ -1,5 +1,7 @@
 Revision history for MPX-RIF
 
+0.05	remove unnecessary files from release
+
 0.04	same identNr were not always recognized, hence objIds were not
         identifier where they should have been. Now fixed.
 	Now harvester and unwrapper included.

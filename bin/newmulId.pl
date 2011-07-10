@@ -1,5 +1,6 @@
 #!/usr/bin/perl
-
+# PODNAME: newmulId.pl
+# ABSTRACT: create new mulIds for mume objects
 use strict;
 use warnings;
 use Time::HiRes qw/gettimeofday/;
@@ -12,10 +13,6 @@ my $opts = {};
 getopts( 'd', $opts );
 
 sub debug;
-
-=head1 NAME
-
-newmulId.pl - create new mulIds for mume objects
 
 =head1 SYNOPSIS
 

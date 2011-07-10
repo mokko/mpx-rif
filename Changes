@@ -1,8 +1,10 @@
 Revision history for MPX-RIF
 
-*0.04	identNr was not trimmed
-		no harvester included
-		there is another bug that prevents correct lookup
+0.04	same identNr were not always recognized, hence objIds were not
+        identifier where they should have been. Now fixed.
+	Now harvester and unwrapper included.
+	-n command-line option to switch off harvesting
+	moved documentation into mpx-rif.pl
 
 0.03    2011-07
         now downsizes pictures automatically when to big and warns when

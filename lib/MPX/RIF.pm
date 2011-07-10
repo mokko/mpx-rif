@@ -1,6 +1,5 @@
 package MPX::RIF;
-
-# ABSTRACT: Resource Information Faker - build cheap mpx from filenames etc.
+# ABSTRACT: build cheap mpx from filenames etc.
 
 use warnings;
 use strict;
@@ -262,6 +261,7 @@ sub _lookupObjId {
 	if ( !@nodes ) {
 		my $msg = "'$identNr' not found, objId missing";
 		log $msg;
+
 		#debug "xpath returns zero nodes";
 		return ();
 	}
@@ -492,6 +492,12 @@ sub validate {
 	}
 }
 
+=func my $xpc=registerNS ($doc);
+
+Expects DOM or doc, never sure about it. Returns xpc.
+
+Register prefix mpx with http://www.mpx.org/mpx
+=cut
 sub registerNS {
 	my $doc = shift;
 	my $xpc = XML::LibXML::XPathContext->new($doc);
@@ -506,7 +512,7 @@ sub registerNS {
 
 sub writeXML {
 	my $self = shift;
-	my $i=0; #count mume records
+	my $i    = 0;       #count mume records
 
 	debug "Begin writingXML";
 	my $output;
@@ -596,7 +602,6 @@ sub writeXML {
 	open( my $fh, '>:encoding(UTF-8)', $temp->{5} ) or die $!;
 	print $fh $output;
 	close $fh;
-
 
 	$self->stop(5);
 	$self->{output} = $output;
@@ -1026,30 +1031,42 @@ sub _harvest {
 	if ( !$response->is_error ) {
 		debug "About to write harvest to $mpx_fn";
 
-		my $unwrapFN = realpath(
-			File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
-		if (!-f $unwrapFN) {
-			die "$unwrapFN not cound. Check bin../xsl/unwrap.xsl";
-		}
-
-		my $xslt      = XML::LibXSLT->new();
-		my $style_doc = XML::LibXML->load_xml(
-			location => $unwrapFN,
-			no_cdata => 1
-		);
-		my $stylesheet = $xslt->parse_stylesheet($style_doc);
-
-		#now dom
-		$response = $stylesheet->transform( $response->toDOM );
-
 		open( my $fh, '> ', $mpx_fn )
 		  or die 'Error: Cannot write to file:' . $mpx_fn . '! ' . $!;
+
+		#unwrap, $response is now in dom
+		#bad style, but i fear memory problems otherwise
+		$response = _unwrap($response);
+
 		#test if output_as_bytes results in better indent
 		#print $fh $response->output_as_bytes
 		print $fh $response->toString;
 		close $fh;
 	}
 }
+
+sub _unwrap {
+	my $response=shift or die "Need response";
+
+	my $unwrapFN = realpath(
+		File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
+	if ( !-f $unwrapFN ) {
+		die "$unwrapFN not cound. Check bin../xsl/unwrap.xsl";
+	}
+
+	my $xslt      = XML::LibXSLT->new();
+	my $style_doc = XML::LibXML->load_xml(
+		location => $unwrapFN,
+		no_cdata => 1
+	);
+
+	my $stylesheet = $xslt->parse_stylesheet($style_doc);
+
+	#now dom
+	return $stylesheet->transform( $response->toDOM );
+}
+
+
 
 =head1 AUTHOR
 

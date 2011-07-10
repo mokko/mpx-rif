@@ -214,26 +214,36 @@ sub identNr {
 	my $identNr = $1;
 
 	#optional a
-	$identNr .= ' ' . $2 if ($2);
+	if ($2) {
+		$identNr .= ' ' . $2;
+	}
 
 	#optional Dlg
 	if ($3) {
 		$identNr .= ' ' . $3;
 	}
 
-
 	#required 1234
 	$identNr .= ' ' . $4;
 
 	#optional a-c
-	$identNr .= ' ' . $5 if $5;
+	if ($5) {
+		$identNr .= ' ' . $5;
+	}
 
 	#optional <1>
-	$identNr .= ' <' . $6 . '>' if $6;
-
+	if ($6) {
+		$identNr .= ' <' . $6 . '>';
+	}
 	debug " +identNr: '$identNr'";
 	return $identNr;
 }
+
+=func identErr($msg, $file, $path);
+
+logs and debugs a simple message.
+
+=cut
 
 sub identErr {
 	my $msg  = shift;
@@ -248,8 +258,8 @@ sub identErr {
 	debug $msg;
 }
 
-=head2 my $urheber=fotograf($dirs);
-
+=head2 my $urheber=$urheber($dirs);
+	Extracts fotograph/urheber from directories
 =cut
 
 sub urheber {
@@ -297,6 +307,9 @@ sub farbe {
 
 }
 
+=func my $pref=pref($file);
+	Extracts priority from filename.
+=cut
 sub pref {
 	my $file = shift;
 	my $pref;
@@ -319,7 +332,7 @@ sub pref {
 	return 1;
 }
 
-=head2 my $freigabe_str=freigabe ($file);
+=func my $freigabe_str=freigabe ($file);
 
 Parses the file name for -x signalling that it should be released on the web.
 Expects filename and returns the string "web". If it doesn't find the signal
@@ -382,6 +395,9 @@ sub cyg2win {
 	}
 }
 
+=func my $num=alpha2num ($alpha);
+	Simple translation of A to 1, B to 2 etc.
+=cut
 sub alpha2num {
 	my $in = shift;
 

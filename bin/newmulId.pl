@@ -1,5 +1,6 @@
 #!/usr/bin/perl
-
+# PODNAME: newmulId.pl
+# ABSTRACT: create new mulIds for mume objects
 use strict;
 use warnings;
 use Time::HiRes qw/gettimeofday/;
@@ -13,15 +14,6 @@ getopts( 'd', $opts );
 
 sub debug;
 
-=head1 NAME
-
-newmulId.pl - create new mulIds for mume objects
-
-=head1 SYNOPSIS
-
-newmulId.pl in.mpx out.mpx
-
-=cut
 
 #
 # command line sanity
@@ -98,4 +90,33 @@ sub debug {
 		print $msg. "\n";
 	}
 }
+
+
+__END__
+=pod
+
+=head1 NAME
+
+newmulId.pl - create new mulIds for mume objects
+
+=head1 VERSION
+
+version 0.004
+
+=head1 SYNOPSIS
+
+newmulId.pl in.mpx out.mpx
+
+=head1 AUTHOR
+
+Maurice Mengel <mauricemengel@gmail.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Maurice Mengel.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
 

@@ -1,4 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
+
+# PODNAME: MIMO-resmvr.pl
+# ABSTRACT: resource mover for MIMO
 
 use strict;
 use warnings;
@@ -24,54 +27,6 @@ sub debug;
 #	tempdir => '/home/Mengel/temp',
 #};
 
-=head1 NAME
-
-MIMO-resmvr.pl
-
-=head2 SYNOPSIS
-
-MIMO-resmvr.pl [-d] file.mpx
-
-	TODO:
-	-p is a plan only. No file is actually copied.
-
-
-=head1 DESCRIPTION
-
-For MIMO, we need to upload images to MIMO's FTP server. This script copies
-images to a temp directory and renames them using to $mulId.jpg. Currently
-ftp process is handled separately.
-
-1. Read a big mpx file
-2. Loop over every multimediaobjekt
-3. Check various conditions
-4. Move resource file to new location at temp/$mulId.jpg
-5. Write a log with all errors
-
-We copy only files for which we have a mulId, hence they also have metadata
-describing the image. We produce a readable log file.
-
-=head1 TODO
-
-I have three parts to each image and are three are necessary for each MIMO
-image:
-
-a) multimediaobjekt - resource metadata
-b) resource file
-c) sammlungsobjekt - object metadata
-
-This script primarily looks for resource metadata (loop thur each
-multimediaobjekt). This script logs warnings for file specified in mpx, but
-cannot be found at this location during runtime.
-
-I do not check if there are files which have no multimediaobjekte. I did not
-check if there are dublicate multimediaobjekte.
-
-Should I also check which multimediaobjekt has no verknüpftesObjekt?
-Maybe there are multimediaobjekte which are not meant for MIMO? Maybe in a
-separate script.
-
-=cut
 
 #
 # command line sanity
@@ -163,15 +118,6 @@ foreach my $node (@nodes) {
 # SUBs
 #
 
-=head2 resizeJpg ($old, $new);
-
-Expects two file paths: the current location and the new location. It will
-check if image is bigger 800 px in either width or length. The new version
-will be limited to 800 px.
-
-I assume I already tested if $old exists and get here only if it does.
-
-=cut
 
 sub resizeJpg {
 	my $old=shift;
@@ -193,21 +139,18 @@ sub resizeJpg {
 	if ($width > 800 or $height > 800) {
 		debug "downsize image";
 		$p->Read ($old);
-		$log->warning("Resize $old");
+		$log->warning("Downsize $old");
 		$p->AdaptiveResize(geometry=>'800x800');
 		$p->Write ($new);
 	} else {
+		if ($width < 800 && $height < 800) {
+			$log->warning("image $old is smaller than 800 px");
+		}
 		#if size ok just cp to new location
 		copy( $old, $new );
 	}
 }
 
-=head2 my ($path, $erweiterung)=getPath($node);
-
-	returns full paths as saved in MPX, typically
-	M:\\bla\bli\blu\file.jpg
-
-=cut
 
 sub getPath {
 	my $node = shift;
@@ -248,12 +191,14 @@ sub getPath {
 	return;
 }
 
+
 sub debug {
 	my $msg = shift;
 	if ( $opts->{d} > 0 ) {
 		print $msg. "\n";
 	}
 }
+
 
 sub init_log {
 	if ( !$config->{tempdir} ) {
@@ -281,6 +226,7 @@ sub init_log {
 	return $log;
 
 }
+
 
 sub init_mpx {
 	my $file = shift;
@@ -345,11 +291,6 @@ sub registerNS {
 	return $xpc;
 }
 
-=head2 my $nix=cygpath ($win);
-
-Convert path from windows to unix. VERY slow and VERY annoying.
-
-=cut
 
 sub cygpath {
 	my $in = shift;
@@ -365,11 +306,6 @@ sub cygpath {
 	return $out;
 }
 
-=head2 my $cyg=win2cyg($win);
-
-very simple re-implementation of cygpath. untested
-
-=cut
 
 sub win2cyg {
 	my $win = shift;
@@ -392,4 +328,119 @@ sub win2cyg {
 	return $cyg;
 
 }
+__END__
+=pod
+
+=head1 NAME
+
+MIMO-resmvr.pl - resource mover for MIMO
+
+=head1 VERSION
+
+version 0.004
+
+=head1 SYNOPSIS
+
+MIMO-resmvr.pl [-d] file.mpx
+
+	TODO:
+	-p is a plan only. No file is actually copied.
+
+=head1 DESCRIPTION
+
+For MIMO, we need to upload images to MIMO's FTP server. This script copies
+images to a temp directory and renames them using to $mulId.jpg. Currently
+ftp process is handled separately.
+
+1. Read a big mpx file
+2. Loop over every multimediaobjekt
+3. Check various conditions
+4. Move resource file to new location at temp/$mulId.jpg
+5. Write a log with all errors
+
+We copy only files for which we have a mulId, hence they also have metadata
+describing the image. We produce a readable log file.
+
+=head1 FUNCTIONS
+
+=head2 resizeJpg ($old, $new);
+
+Expects two file paths: the current location and the new location. It will
+check if image is bigger 800 px in either width or length. The new version
+will be limited to 800 px.
+
+I assume I already tested if $old exists and get here only if it does.
+
+=head2 my ($path, $erweiterung)=getPath($node);
+
+	returns full paths as saved in MPX, typically
+	M:\\bla\bli\blu\file.jpg
+
+=head2 debug 'message';
+
+print debug messages to STDOUT. A newline is added at the end of every debug
+message.
+
+=head2 init_log ($tempdir);
+
+Return value?
+
+=head2 $xpc=init_mpx ('path/to/mpx');
+
+Opens mpx file with LibXML and registers namespace mpx.
+
+=head2 loadConfig ($opts)
+
+If no $opts are specified, loads config values from a yml file. That
+file spec is guessed based on user name:
+	conf/$user.yml
+
+If $opts is specified, it will not look at that location, but try to load
+the conf file directory from that location.
+
+Only subvalues of 'resourceMover' are returned.
+
+=head2 my $xpc=registerNS ($doc);
+
+=head1 TODO
+
+I have three parts to each image and are three are necessary for each MIMO
+image:
+
+a) multimediaobjekt - resource metadata
+b) resource file
+c) sammlungsobjekt - object metadata
+
+This script primarily looks for resource metadata (loop thur each
+multimediaobjekt). This script logs warnings for file specified in mpx, but
+cannot be found at this location during runtime.
+
+I do not check if there are files which have no multimediaobjekte. I did not
+check if there are dublicate multimediaobjekte.
+
+Should I also check which multimediaobjekt has no verknüpftesObjekt?
+Maybe there are multimediaobjekte which are not meant for MIMO? Maybe in a
+separate script.
+
+=head2 my $nix=cygpath ($win);
+
+DEPRECATED. Convert path from windows to unix. VERY slow and VERY annoying.
+Not used anymore. See win2cyg instead.
+
+=head2 my $cyg=win2cyg($win);
+
+very simple re-implementation of cygpath.
+
+=head1 AUTHOR
+
+Maurice Mengel <mauricemengel@gmail.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Maurice Mengel.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
 

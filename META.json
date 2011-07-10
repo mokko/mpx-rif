@@ -1,0 +1,71 @@
+{
+   "abstract" : "build cheap mpx from filenames etc.",
+   "author" : [
+      "Maurice Mengel <mauricemengel@gmail.com>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Dist::Zilla version 4.200008, CPAN::Meta::Converter version 2.110930",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "MPX-RIF",
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.30"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Carp" : 0,
+            "Cwd" : 0,
+            "Date::Manip" : 0,
+            "Encode" : 0,
+            "Exporter" : 0,
+            "File::Copy" : 0,
+            "File::Find::Rule" : 0,
+            "File::Spec" : 0,
+            "FindBin" : 0,
+            "Getopt::Std" : 0,
+            "HTTP::OAI" : 0,
+            "Image::Magick" : 0,
+            "Log::Handler" : 0,
+            "Pod::Usage" : 0,
+            "SOAP::DateTime" : 0,
+            "Time::HiRes" : 0,
+            "UTF8" : 0,
+            "XML::LibXML" : 0,
+            "XML::LibXSLT" : 0,
+            "XML::Writer" : 0,
+            "YAML::Syck" : 0,
+            "YAML::XS" : 0,
+            "utf8" : 0
+         }
+      },
+      "test" : {
+         "requires" : {
+            "English" : 0,
+            "Test::More" : 0,
+            "perl" : "5.006"
+         }
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://rt.cpan.org/Public/Dist/Display.html?Name=MPX-RIF"
+      },
+      "homepage" : "https://github.com/mokko/mpx-rif/wiki",
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/mokko/mpx-rif.git",
+         "web" : "https://github.com/mokko/mpx-rif"
+      }
+   },
+   "version" : "0.004"
+}
+

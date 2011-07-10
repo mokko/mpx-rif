@@ -1,27 +1,31 @@
 package MPX::RIF;
+BEGIN {
+  $MPX::RIF::VERSION = '0.004';
+}
+# ABSTRACT: build cheap mpx from filenames etc.
 
 use warnings;
 use strict;
-use utf8;
 use FindBin;
-use Carp qw(croak carp);
-use File::Find::Rule;
-
-#use IO::File;
-
 use lib "$FindBin::Bin/../lib";
+
+use Carp qw(croak carp);
+use Cwd qw (realpath);
+use Date::Manip;
+use File::Find::Rule;
+use File::Spec;
+use HTTP::OAI;
 use MPX::RIF::Helper qw(debug log);
 use MPX::RIF::Resource;
-
-#works also with XML::Syck in case that is easier to install
-use YAML::XS qw (LoadFile DumpFile);
-
-use Date::Manip;
 use Time::HiRes qw(gettimeofday);    #to generate unique tokens
 use SOAP::DateTime;
-
+use utf8;
 use XML::LibXML;
 use XML::Writer;
+use XML::LibXSLT;
+use YAML::XS qw (LoadFile DumpFile);
+
+#works also with XML::Syck in case that is easier to install
 
 #TODO: more config
 our $temp = {
@@ -32,77 +36,6 @@ our $temp = {
 	5 => 'mume.mpx'
 };
 
-=head1 NAME
-
-MPX::RIF - The great new MPX::RIF!
-
-=head1 VERSION
-
-Version 0.01
-
-=cut
-
-our $VERSION = '0.02';
-
-=head1 SYNOPSIS
-
-Read a yaml config file, parse a directory, extract information from filepath
-write it in human-readable format for debugging and write MPX Mulitmediaobjekt
-information (XML).
-
-    use MPX::RIF;
-
-    my $faker = MPX::RIF->new(%config);
-    my $faker->run; #run calls all the steps in the normal order
-    #alternatively you can call the steps yourself
-
-	#1st step
-	$faker->scandir();
-
-	#2nd step
-	$faker->parsedir();
-
-	#3rd step
-	$faker->lookupObjId();
-
-	#4th step
-	$faker->filter();
-
-	#5th step
-	$faker->writeXML();
-
-	#6th step
-	$faker->validate();
-
-	#Everything else is considered to be the private parts of this module.
-	#For more info see the method run (overview) and the individual methods.
-
-
-=head1 SUBROUTINES/METHODS
-
-=head2 my $faker=MPX::RIF::new (%CONFIG);
-
-REQUIRED
-config is the path to a yaml configuration file.
-	CONIG=>'/path/to/config.yml'
-
-	Config file parameters are described inside the example config.
-
-OPTIONAL
-	BEGIN => 1 #makes MPX::RIF start with yml file
-				0 for off
-				1 read scandir from yml file
-				2 read parsedir from yml file
-				3 read lookup from yml file
-	DEBUG=>1, # turns debug messages on/off; 1 for on - 0 for off
-	STOP=> 1, # stop after step 1,
-				0 don't stop
-				1 stop after step 1,
-				2 stop after step 2,
-				3 stop after step 3,
-				4 and higher - ignored (same as 0)
-
-=cut
 
 sub new {
 	my $class = shift;
@@ -122,27 +55,24 @@ sub new {
 
 	#delete log file
 
-	log "lookup file: ". $self->{lookup};
+	log "lookup file: " . $self->{lookup};
 
 	return $self;
 }
 
-=head2 $faker->lookupObjId ('path/to/big-file.mpx');
-
-3rd step. Associate each resource with an objId. Also filter stuff out
-that does not have required information.
-
-=cut
 
 sub lookupObjId {
 	my $self   = shift;
 	my $mpx_fn = $self->{lookup};
 
+	#attemp harvest and write new file to disk for debugging
+	#avoid with NOHARVEST or -n
+	$self->_harvest();
+
 	if ( !$mpx_fn ) {
 		die 'ERROR: loopupObjId - cannot execute since no mpx data '
 		  . 'specified!';
 	}
-
 
 	# loop over all resources
 	# at this point I should NOT need to check anymore if
@@ -152,6 +82,7 @@ sub lookupObjId {
 		my $identNr  = $resource->get('identNr');
 		if ($identNr) {
 			my $objId = $self->_lookupObjId($identNr);
+
 			#take out the identNr, not needed anymore!
 			debug "lookup $identNr";
 			delete $resource->{identNr};
@@ -168,13 +99,6 @@ sub lookupObjId {
 
 }
 
-=head2 $faker->$filter;
-
-4th step. Drops resources from store if they don't have specified keys.
-
-a new step
-
-=cut
 
 sub filter {
 	my $self       = shift;
@@ -210,11 +134,6 @@ sub filter {
 	$self->stop(4);
 }
 
-=head2 my $objId=$self->_lookupObjId;
-
-return () on failure.
-
-=cut
 
 sub _lookupObjId {
 	my $self    = shift;
@@ -250,6 +169,7 @@ sub _lookupObjId {
 	if ( !@nodes ) {
 		my $msg = "'$identNr' not found, objId missing";
 		log $msg;
+
 		#debug "xpath returns zero nodes";
 		return ();
 	}
@@ -268,17 +188,6 @@ sub _lookupObjId {
 	return $objId;
 }
 
-=head2 $faker->parsedir
-
-Second step.
-
-Will call extension to extract information from file name and
-path. Also adds constants.
-
-Naming convention: Every file that is recognized by the find rules specified
-in the config.yml is treated as an object with one or several features.
-
-=cut
 
 sub parsedir {
 	my $self = shift;
@@ -298,46 +207,6 @@ sub parsedir {
 
 }
 
-=head2 $faker->run();
-
-Executes all steps one after according to configuration.
-
-The steps are
- (1) scandir - Read the directory specified in configuration recursively,
-               filter files of one or several types (extensions), write
-               the resulting file list in the resource store, dump the
-               store (containing the file list) as yaml (for debugging
-               purposes).
-               If option STOP=1 is specified the MPX::RIF will exit here.
-
- (2) parsedir - Parse the filepath for information. This is done in an external
- 			   module since it is very specific to the project, e.g. different
- 			   for MIMO than for 78s. The result is saved in the resource
- 			   store and dumped to yaml for debugging.
-
- (3) objIdloopup - To add the metadata of the resource store to existing mpx
- 			   data we need to add the right objId to each multimediaObjekt.
- 			   We look this information up in one big xml file which should
- 			   contain all exported Sammlungsobjekte.
-
- 			   I will probably need to write yet another script that dumps such
- 			   a complete mpx file from the OAI data provider.
-
- 			   Resource store is dumped as yaml to check if this step was
- 			   successful.
-
- (4) filter - If a resource lacks one of a list of required features, the
-			   resource is dropped (deleted) form the resource store.
-
- (5) writeXML - The resource store is converted to XML-MPX or more precisely to
- 			   multimediaobjekt-records. The resulting file will be manually
- 			   inserted into existing big mpx file and (re)imported in the OAI
- 			   data provider. (Alternatively, I could write a variant of the
- 			   digester which digests mulitmediaobjekte.)
-
- (6) validate - validate XML and check for duplicate mulId
-
-=cut
 
 sub run {
 	my $self = shift;
@@ -415,14 +284,6 @@ sub run {
 	debug "done\n";
 }
 
-=head2 $faker->scandir
-
-First step. Just scans the directory according to info from configuration file.
-It saves info into a yml file (1-scandir.yml) for manual proof reading. Use the
-STOP option during initialization to abort after this step, e.g.
- MPX::RIF->new (STOP=>1);
-
-=cut
 
 sub scandir {
 	my $self = shift;
@@ -455,11 +316,6 @@ sub scandir {
 	$self->stop(1);
 }
 
-=head2 $self->validate();
-
-Validate resulting mpx and check for duplicate mulIds. Log errors.
-
-=cut
 
 sub validate {
 	my $self = shift;
@@ -521,13 +377,10 @@ sub registerNS {
 	return $xpc;
 }
 
-=head2 $self->writeXML();
-	TODO: maybe I should check if an resource is complete before I xml-ify it
-
-=cut
 
 sub writeXML {
 	my $self = shift;
+	my $i    = 0;       #count mume records
 
 	debug "Begin writingXML";
 	my $output;
@@ -591,7 +444,7 @@ sub writeXML {
 				$attributes{'freigabe'} = $freigabe;
 				delete $self->{data}->{$id}->{freigabe};
 			}
-
+			$i++;
 			$writer->startTag( 'multimediaobjekt', %attributes );
 
 			#this should be elsewhereş
@@ -611,24 +464,17 @@ sub writeXML {
 	$writer->endTag('museumPlusExport');
 	$writer->end();
 
+	log "$i mume records written";
+
 	debug "about to write XML";
 	open( my $fh, '>:encoding(UTF-8)', $temp->{5} ) or die $!;
 	print $fh $output;
 	close $fh;
-	$self->stop(5);
 
+	$self->stop(5);
 	$self->{output} = $output;
 }
 
-=head1 HELPER METHODS
-
-=head2 $self->stop ($location);
-
-Location is the number of the step where stop is called from. If location
-matches the $self->{STOP}, MPX::RIF stops gracefully and outputs an a
-log and or debug message (if debug and log are on).
-
-=cut
 
 sub stop {
 
@@ -646,19 +492,6 @@ sub stop {
 	exit 0;
 }
 
-=head2 testparser($ilepath);
-
-Just to illustrate how simple the extension could be. It expects a single
-filepath and returns a hashref with key/value pairs, like this:
-
-$object={
-	key=>value,
-	identNr=>'12345d',
-}
-
-might soon be superseded by MPX::RIF::Resource
-
-=cut
 
 sub testparser {
 	my $filepath = shift;
@@ -669,9 +502,6 @@ sub testparser {
 	return $item;
 }
 
-=head1 INTERNAL INTERFACE
-
-=cut
 
 sub _addCLI {
 	my $self = shift;
@@ -680,6 +510,9 @@ sub _addCLI {
 	#if ( $opts->{VERBOSE} ) {
 	#	$self->{VERBOSE} = $opts->{VERBOSE};
 	#}
+	if ( $opts->{NOHARVEST} ) {
+		$self->{NOHARVEST} = 1;
+	}
 
 	if ( $opts->{DEBUG} ) {
 		MPX::RIF::Helper::init_debug();
@@ -723,7 +556,7 @@ sub _config {
 	#	debug "$_\n   $self->{$_}";
 	#}
 
-	my @mandatory = qw/scandir dirparser/;
+	my @mandatory = qw/scandir dirparser dataProvider/;
 
 	my $err = 0;
 	foreach my $item (@mandatory) {
@@ -780,10 +613,6 @@ sub _config {
 	}
 }
 
-=head2 if ($self->_dirparserDefined)
-
-=cut
-
 sub _dirparserDefined {
 	my $self = shift;
 	no strict 'refs';
@@ -796,18 +625,6 @@ sub _dirparserDefined {
 	#todo: should I return 0 on fail?
 }
 
-=head2 my $ret=$faker->dirparser ($path);
-
-Calls the dirparser callback specified in config.yml. Expects a single path.
-Returns a hashref representing one object. If something is returned the result
-is saved in $self->{data};
-
-my $object={
-	key=>value,
-	feature=>blue,
-}
-
-=cut
 
 sub _dirparser {
 	my $self     = shift;
@@ -840,8 +657,6 @@ sub _loadMPX {
 	$self->{xpc} = $xpc;
 }
 
-=head2 $self->_loadStore('path/to/store.yml');
-=cut
 
 #load store from YAML file.
 sub _loadStore {
@@ -861,8 +676,6 @@ sub _loadStore {
 	$self->{data} = $data;
 }
 
-=head2 $self->_dumpStore('path/to/store.yml');
-=cut
 
 sub _dumpStore {
 	my $self     = shift;
@@ -887,14 +700,6 @@ sub _loadConfig {
 	return LoadFile( $opts->{CONFIG} );
 }
 
-=head2 	$self->_storeResource ($resource);
-
-Stores the resource in the data store. Requires resource to have an id.
-
-If I don't want redundancy, i.e. the id twice, I need to extract it when I save
-it and reinstate when I get it back. Sofar I, only access from _resources.
-
-=cut
 
 sub _storeResource {
 	my $self     = shift;
@@ -946,19 +751,6 @@ sub _testData {
 	exit 0;
 }
 
-=head @arr=$self->_resourceIds();
-
-
-OLD: Don't know how to do this:
-
-Returns one resource at a time from the resource store. Use in while
-(preferred) or foreach, e.g.:
-
- foreach my $resource ($self->_resources()) {
-	#bla
- }
-
-=cut
 
 sub _resourceIds {
 	my $self = shift;
@@ -984,9 +776,6 @@ sub _resourceIds {
 	#return keys( %{ $self->{data} } );
 }
 
-=head2 my $resource=$self->_getResource ($id);
-
-=cut
 
 sub _getResource {
 	my $self = shift;
@@ -1007,41 +796,280 @@ sub _getResource {
 	return $resource;
 }
 
+sub _harvest {
+	my $self = shift or return;
+	my $mpx_fn = $self->{lookup};
+
+	if ( $self->{NOHARVEST} ) {
+		debug "NOHARVEST switch actived. Will not attempt to harvest";
+		return;
+	}
+
+	debug "About to query data provider: $self->{dataProvider}";
+
+	my $harvester =
+	  HTTP::OAI::Harvester->new( baseURL => $self->{dataProvider}, );
+
+	my $response = $harvester->ListRecords(
+		metadataPrefix => 'mpx',
+		set            => 'MIMO',
+	);
+
+	if ( $response->is_error ) {
+		warn( "Error harvesting: " . $response->message . "\n" );
+	}
+
+	while ( my $rt = $response->resumptionToken ) {
+		debug 'harvesting ' . $rt->resumptionToken;
+		$response->resume( resumptionToken => $rt );
+		if ( $response->is_error ) {
+			warn( "Error resuming: " . $response->message . "\n" );
+		}
+	}
+
+	if ( !$response->is_error ) {
+		debug "About to write harvest to $mpx_fn";
+
+		open( my $fh, '> ', $mpx_fn )
+		  or die 'Error: Cannot write to file:' . $mpx_fn . '! ' . $!;
+
+		#unwrap, $response is now in dom
+		#bad style, but i fear memory problems otherwise
+		$response = _unwrap($response);
+
+		#test if output_as_bytes results in better indent
+		#print $fh $response->output_as_bytes
+		print $fh $response->toString;
+		close $fh;
+	}
+}
+
+sub _unwrap {
+	my $response=shift or die "Need response";
+
+	my $unwrapFN = realpath(
+		File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
+	if ( !-f $unwrapFN ) {
+		die "$unwrapFN not cound. Check bin../xsl/unwrap.xsl";
+	}
+
+	my $xslt      = XML::LibXSLT->new();
+	my $style_doc = XML::LibXML->load_xml(
+		location => $unwrapFN,
+		no_cdata => 1
+	);
+
+	my $stylesheet = $xslt->parse_stylesheet($style_doc);
+
+	#now dom
+	return $stylesheet->transform( $response->toDOM );
+}
+
+1;    # End of MPX::RIF
+
+__END__
+=pod
+
+=head1 NAME
+
+MPX::RIF - build cheap mpx from filenames etc.
+
+=head1 VERSION
+
+version 0.004
+
+=head1 SYNOPSIS
+
+Read a yaml config file, parse a directory, extract information from filepath
+write it in human-readable format for debugging and write MPX Mulitmediaobjekt
+information (XML).
+
+    use MPX::RIF;
+
+    my $faker = MPX::RIF->new(%config);
+    my $faker->run; #run calls all the steps in the normal order
+    #alternatively you can call the steps yourself
+
+	#1st step
+	$faker->scandir();
+
+	#2nd step
+	$faker->parsedir();
+
+	#3rd step
+	$faker->lookupObjId();
+
+	#4th step
+	$faker->filter();
+
+	#5th step
+	$faker->writeXML();
+
+	#6th step
+	$faker->validate();
+
+	#Everything else is considered to be the private parts of this module.
+	#For more info see the method run (overview) and the individual methods.
+
+=head1 METHODS
+
+=head2 my $faker=MPX::RIF::new (%CONFIG);
+
+REQUIRED
+config is the path to a yaml configuration file.
+	CONIG=>'/path/to/config.yml'
+
+	Config file parameters are described inside the example config.
+
+OPTIONAL
+	BEGIN => 1 #makes MPX::RIF start with yml file
+				0 for off
+				1 read scandir from yml file
+				2 read parsedir from yml file
+				3 read lookup from yml file
+	DEBUG=>1, # turns debug messages on/off; 1 for on - 0 for off
+	STOP=> 1, # stop after step 1,
+				0 don't stop
+				1 stop after step 1,
+				2 stop after step 2,
+				3 stop after step 3,
+				4 and higher - ignored (same as 0)
+
+=head2 $faker->lookupObjId ('path/to/big-file.mpx');
+
+3rd step. Associate each resource with an objId. Also filter stuff out
+that does not have required information.
+
+=head2 $faker->$filter;
+
+4th step. Drops resources from store if they don't have specified keys.
+
+a new step
+
+=head2 $faker->parsedir
+
+Second step.
+
+Will call extension to extract information from file name and
+path. Also adds constants.
+
+Naming convention: Every file that is recognized by the find rules specified
+in the config.yml is treated as an object with one or several features.
+
+=head2 $faker->run();
+
+Executes all steps one after according to configuration. See mpx-rif.pl for
+high-level description.
+
+=head2 $faker->scandir
+
+First step. Just scans the directory according to info from configuration file.
+It saves info into a yml file (1-scandir.yml) for manual proof reading. Use the
+STOP option during initialization to abort after this step, e.g.
+ MPX::RIF->new (STOP=>1);
+
+=head2 $self->validate();
+
+Validate resulting mpx and check for duplicate mulIds. Log errors.
+
+=head2 $self->writeXML();
+	TODO: maybe I should check if an resource is complete before I xml-ify it
+
+=head2 $self->stop ($location);
+
+Location is the number of the step where stop is called from. If location
+matches the $self->{STOP}, MPX::RIF stops gracefully and outputs an a
+log and or debug message (if debug and log are on).
+
+=head2 my $ret=$faker->_dirparser ($path);
+
+Calls the dirparser callback specified in config.yml. Expects a single path.
+Returns a hashref representing one object. If something is returned the result
+is saved in $self->{data};
+
+my $object={
+	key=>value,
+	feature=>blue,
+}
+
+=head2 $self->_loadStore('path/to/store.yml');
+
+=head2 $self->_dumpStore('path/to/store.yml');
+
+=head2 $self->_storeResource ($resource);
+
+Stores the resource in the data store. Requires resource to have an id.
+
+If I don't want redundancy, i.e. the id twice, I need to extract it when I save
+it and reinstate when I get it back. Sofar I, only access from _resources.
+
+=head2 @arr=$self->_resourceIds();
+
+OLD: Don't know how to do this:
+
+Returns one resource at a time from the resource store. Use in while
+(preferred) or foreach, e.g.:
+
+ foreach my $resource ($self->_resources()) {
+	#bla
+ }
+
+=head2 my $resource=$self->_getResource ($id);
+
+=head1 FUNCTIONS
+
+=head2 my $xpc=registerNS ($doc);
+
+Expects DOM or doc, never sure about it. Returns xpc.
+
+Register prefix mpx with http://www.mpx.org/mpx
+
+=head2 testparser($ilepath);
+
+Just to illustrate how simple the extension could be. It expects a single
+filepath and returns a hashref with key/value pairs, like this:
+
+$object={
+	key=>value,
+	identNr=>'12345d',
+}
+
+might soon be superseded by MPX::RIF::Resource
+
+=head1 RATIONALE
+
+There are many images. It can take a long to enter them manually in the
+database. For each item, there are many repetitive information items, e.g. 1000
+fotos were made by the same fotographer.
+
+This little perl tool parses a directory and writes XML/MPX with the metadata.
+It is good with repetative metadata. Of course, this is not a silver bullett.
+It is a just a cheap solution that works only if you know your photos well.
+
+The whole process is broken down in several consecutive steps. State
+information is dumped a couple of times during executing as yaml, to
+facilitate proof-reading and error checking. There are debug messages and log
+messages which should help you finding quirks in your data.
+
+The tool is configurable. It's written in a haste i.e. no great code, but
+it should at least be readable.
+
+=head2 my $objId=$self->_lookupObjId;
+
+return () on failure.
+
+=head1 INTERNAL INTERFACE
+
 =head1 AUTHOR
 
-Maurice Mengel, C<< <mauricemengel at gmail.com> >>
+Maurice Mengel <mauricemengel@gmail.com>
 
-=head1 BUGS
+=head1 COPYRIGHT AND LICENSE
 
-Please report any bugs or feature requests to C<bug-mpx-rif at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=MPX-RIF>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
+This software is copyright (c) 2011 by Maurice Mengel.
 
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc MPX::RIF
-
-
-You can also look for information at:
-
-github.com/mokko/mpx-rif
-
-=head1 ACKNOWLEDGEMENTS
-
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright 2011 Maurice Mengel.
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
-
-See http://dev.perl.org/licenses/ for more information.
-
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
 
-1;    # End of MPX::RIF

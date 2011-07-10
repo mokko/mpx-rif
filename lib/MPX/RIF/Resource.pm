@@ -1,37 +1,13 @@
 package MPX::RIF::Resource;
+BEGIN {
+  $MPX::RIF::Resource::VERSION = '0.004';
+}
+# ABSTRACT: deal with resources and features
 use MPX::RIF::Helper qw(debug log);
 use Carp qw/carp croak/;
 use strict;
 use warnings;
 
-=head1 NAME
-
-MPX::RIF::Resource
-
-...hide the dirty work with the $data hashref in the resource object.
-
-For use inside MPX::RIF. MPX::RIF's end user shouldn't need this.
-
-Of course, a resource is not a resource, but its description. A resource is
-identified by a unique id (usually a filepath). Each resource has a number
-of arbitrary features. I will use this data model as long as I can and modify
-if it's not enough anymore.
-
-$resource= {
-	id=>'/path/to/resource/on/disk.bla',
-	identNr=>'VII c 123a',
-	feature=>'value'
-}
-
-=head1 SYNOPSIS
-
-my $resource=MPX::RIF::Resource->new(id=>$path);
-
-=head2 my $resource=MPX::RIF::Resource->new(id=>$path);
-
-Parameters are optional, see $resource->addFeatures.
-
-=cut
 
 sub new {
 	my $class    = shift;
@@ -48,18 +24,6 @@ sub new {
 	return $resource;
 }
 
-=head2 $resource->addFeatures(key=>value);
-
-You need to have an id at some point,
-but it's your own obligation to take care of it.
-Additional value pairs are fine:
-	MPX::RIF::Resource->new(
-		id=>$path,
-		key1=>$value1,
-		key2=>$value2,
-	);
-
-=cut
 
 sub addFeatures {
 	my $resource = shift;
@@ -81,18 +45,6 @@ sub addFeatures {
 	}
 }
 
-=head2  $resource->addConstants ($self->{constants});
-
-constants is a hashref with key value pairs
-
-$constants={
-	$key1=>$value1,
-	$key2=>$value2,
-}
-
-They will be added to the resource.
-
-=cut
 
 sub addConstants {
 	my $resource = shift;
@@ -112,13 +64,6 @@ sub addConstants {
 	}
 }
 
-=head2 my $value=$resource->get('feature');
-
-getter that returns the value for a specified feature.
-If feature doesn't return, getter returns nothing. So you can use it to
-test if feature exists.
-
-=cut
 
 sub get {
 	my $resource = shift;
@@ -139,15 +84,6 @@ sub get {
 	return $resource->{$feature};
 }
 
-=head2 my @arr=$resource->loopFeatures;
-
-Getter that returns features for a given resource as array:
-
-	foreach my $feat ($resource->loopFeature) {
-		my $value=$resource->get($feat);
-	}
-
-=cut
 
 sub loopFeatures {
 	my $resource = shift;
@@ -157,17 +93,6 @@ sub loopFeatures {
 
 }
 
-=head2 $resource->path2mpx ('id');
-	$resource->path2mpx ('id');
-
-	Assumes that id has path.
-
-
-	not used any more!
-
-
-
-=cut
 
 sub path2mpx {
 	my $resource = shift;    #function or method?
@@ -207,11 +132,6 @@ sub path2mpx {
 	#multimediaErweiterung
 }
 
-=head2 $resource->rmFeat ($feat);
-
-Delete a feature, expects feature name.
-
-=cut
 
 sub rmFeat {
 	my $resource = shift;    #function or method?
@@ -224,11 +144,6 @@ sub rmFeat {
 	}
 }
 
-=head2 my $winpath=cygpath($nixPath);
-
-Quick and very dirty.
-
-=cut
 
 sub cygpath {
 	my $nix_path = shift;
@@ -247,3 +162,107 @@ sub cygpath {
 }
 
 1;
+
+__END__
+=pod
+
+=head1 NAME
+
+MPX::RIF::Resource - deal with resources and features
+
+=head1 VERSION
+
+version 0.004
+
+=head1 SYNOPSIS
+
+my $resource=MPX::RIF::Resource->new(id=>$path);
+
+=head2 my $resource=MPX::RIF::Resource->new(id=>$path);
+
+Parameters are optional, see $resource->addFeatures.
+
+=head2 $resource->addFeatures(key=>value);
+
+You need to have an id at some point,
+but it's your own obligation to take care of it.
+Additional value pairs are fine:
+	MPX::RIF::Resource->new(
+		id=>$path,
+		key1=>$value1,
+		key2=>$value2,
+	);
+
+=head2 $resource->addConstants ($self->{constants});
+
+constants is a hashref with key value pairs
+
+$constants={
+	$key1=>$value1,
+	$key2=>$value2,
+}
+
+They will be added to the resource.
+
+=head2 my $value=$resource->get('feature');
+
+getter that returns the value for a specified feature.
+If feature doesn't return, getter returns nothing. So you can use it to
+test if feature exists.
+
+=head2 my @arr=$resource->loopFeatures;
+
+Getter that returns features for a given resource as array:
+
+	foreach my $feat ($resource->loopFeature) {
+		my $value=$resource->get($feat);
+	}
+
+=head2 $resource->path2mpx ('id');
+	$resource->path2mpx ('id');
+
+	Assumes that id has path.
+
+
+	not used any more!
+
+=head2 $resource->rmFeat ($feat);
+
+Delete a feature, expects feature name.
+
+=head2 my $winpath=cygpath($nixPath);
+
+Quick and very dirty.
+
+=head1 NAME
+
+MPX::RIF::Resource
+
+...hide the dirty work with the $data hashref in the resource object.
+
+For use inside MPX::RIF. MPX::RIF's end user shouldn't need this.
+
+Of course, a resource is not a resource, but its description. A resource is
+identified by a unique id (usually a filepath). Each resource has a number
+of arbitrary features. I will use this data model as long as I can and modify
+if it's not enough anymore.
+
+$resource= {
+	id=>'/path/to/resource/on/disk.bla',
+	identNr=>'VII c 123a',
+	feature=>'value'
+}
+
+=head1 AUTHOR
+
+Maurice Mengel <mauricemengel@gmail.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Maurice Mengel.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+

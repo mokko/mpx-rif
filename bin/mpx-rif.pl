@@ -1,4 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
+
+# PODNAME: mpx-rif.pl
+# ABSTRACT: command line frontend for MPX::RIF
 
 use strict;
 use warnings;
@@ -7,10 +10,12 @@ use Getopt::Std;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use MPX::RIF;
+use Pod::Usage;
 
 
 my $opts = {};
-getopts( 'b:ds:tv', $opts );
+getopts( 'b:dhns:tv', $opts );
+pod2usage(-verbose => 2) if ( $opts->{h} );
 
 #-s 1 - stop after scandir
 #-s 2 - stop after dirparser
@@ -49,6 +54,11 @@ if ( $opts->{d} or $opts->{v} ) {
 	$config->{DEBUG} = 1;
 }
 
+if ( $opts->{n} ) {
+	print "Set NOHARVEST switch\n" if $config->{DEBUG};
+	$config->{NOHARVEST} = 1;
+}
+
 if ( $opts->{s} ) {
 	if ( $opts->{s} !~ /\d/ ) {
 		print "Error: stop parameter is not a single digit integer\n";
@@ -70,24 +80,82 @@ if ( $opts->{t} ) {
 my $faker = MPX::RIF->new($config);
 $faker->run();
 
+
+
+__END__
+=pod
+
 =head1 NAME
 
-mpx-rif.pl
+mpx-rif.pl - command line frontend for MPX::RIF
+
+=head1 VERSION
+
+version 0.004
 
 =head2 SYNOPSIS
 
-mpx-rif.pl -d conf/MIMO.yml
+mpx-rif.pl [-d] conf/MIMO.yml
+mpx-rif.pl -b 1 -s 1 conf/MIMO.yml
 
--d
+=head2 OPTIONS
 
-	print lots of debug info to STDOUT while executing
+-d: prints debug info to STDOUT
 
--b 1
+-b 1: begins at step 1
 
-	begin with step 1
+-s 1: stop after step 1
 
--s 1
+-n: no harvest
 
-	stop after step 1
+Executes all steps one after according to configuration.
+
+=head2 DECRIPTION
+
+The steps are
+ (1) scandir - Read the directory specified in configuration recursively,
+               filter files of one or several types (extensions), write
+               the resulting file list in the resource store, dump the
+               store (containing the file list) as yaml (for debugging
+               purposes).
+               If option STOP=1 is specified the MPX::RIF will exit here.
+
+ (2) parsedir - Parse the filepath for information. This is done in an external
+ 			   module since it is very specific to the project, e.g. different
+ 			   for MIMO than for 78s. The result is saved in the resource
+ 			   store and dumped to yaml for debugging.
+
+ (3) objIdloopup - To add the metadata of the resource store to existing mpx
+ 			   data we need to add the right objId to each multimediaObjekt.
+ 			   We look this information up in one big xml file which should
+ 			   contain all exported Sammlungsobjekte.
+
+ 			   Now a harvester is included.
+
+ 			   Resource store is dumped as yaml to check if this step was
+ 			   successful.
+
+ (4) filter - If a resource lacks one of a list of required features, the
+			   resource is dropped (deleted) form the resource store.
+
+ (5) writeXML - The resource store is converted to XML-MPX or more precisely to
+ 			   multimediaobjekt-records. The resulting file will be manually
+ 			   inserted into existing big mpx file and (re)imported in the OAI
+ 			   data provider. (Alternatively, I could write a variant of the
+ 			   digester which digests mulitmediaobjekte.)
+
+ (6) validate - validate XML and check for duplicate mulId
+
+=head1 AUTHOR
+
+Maurice Mengel <mauricemengel@gmail.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Maurice Mengel.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
+

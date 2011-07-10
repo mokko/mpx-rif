@@ -1,45 +1,162 @@
-MPX-RIF
+NAME
+    MPX::RIF - build cheap mpx from filenames etc.
 
-There are many images. It takes very long to enter them manually in the
-database. For each item, there are many repetitive information items, e.g. 1000
-fotos were made by the same fotographer.
+VERSION
+    version 0.004
 
-This little perl tool parses a directory and writes XML/MPX with the metadata.
+SYNOPSIS
+    Read a yaml config file, parse a directory, extract information from
+    filepath write it in human-readable format for debugging and write MPX
+    Mulitmediaobjekt information (XML).
 
-The whole process is broken down in several consecutive steps.
+        use MPX::RIF;
 
-State information is dumped a couple of times during executing as yaml, to
-facilitate proof-reading and error checking. There are debug messages and log
-messages which should help you finding quirks in your data.
+        my $faker = MPX::RIF->new(%config);
+        my $faker->run; #run calls all the steps in the normal order
+        #alternatively you can call the steps yourself
 
-The tool is pretty configurable. It's written in a haste i.e. no great code, but
-should be at least readable.
+            #1st step
+            $faker->scandir();
 
+            #2nd step
+            $faker->parsedir();
 
-INSTALLATION
+            #3rd step
+            $faker->lookupObjId();
 
-To install this module, run the following commands:
+            #4th step
+            $faker->filter();
 
-	perl Makefile.PL
-	make
-	make test
-	make install
+            #5th step
+            $faker->writeXML();
 
-SUPPORT AND DOCUMENTATION
+            #6th step
+            $faker->validate();
 
-After installing, you can find documentation for this module with the
-perldoc command.
+            #Everything else is considered to be the private parts of this module.
+            #For more info see the method run (overview) and the individual methods.
 
-    perldoc MPX::RIF
+METHODS
+  my $faker=MPX::RIF::new (%CONFIG);
+    REQUIRED config is the path to a yaml configuration file.
+    CONIG=>'/path/to/config.yml'
 
+            Config file parameters are described inside the example config.
 
-LICENSE AND COPYRIGHT
+    OPTIONAL BEGIN => 1 #makes MPX::RIF start with yml file 0 for off 1 read
+    scandir from yml file 2 read parsedir from yml file 3 read lookup from
+    yml file DEBUG=>1, # turns debug messages on/off; 1 for on - 0 for off
+    STOP=> 1, # stop after step 1, 0 don't stop 1 stop after step 1, 2 stop
+    after step 2, 3 stop after step 3, 4 and higher - ignored (same as 0)
 
-Copyright (C) 2011 Maurice Mengel
+  $faker->lookupObjId ('path/to/big-file.mpx');
+    3rd step. Associate each resource with an objId. Also filter stuff out
+    that does not have required information.
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
+  $faker->$filter;
+    4th step. Drops resources from store if they don't have specified keys.
 
-See http://dev.perl.org/licenses/ for more information.
+    a new step
+
+  $faker->parsedir
+    Second step.
+
+    Will call extension to extract information from file name and path. Also
+    adds constants.
+
+    Naming convention: Every file that is recognized by the find rules
+    specified in the config.yml is treated as an object with one or several
+    features.
+
+  $faker->run();
+    Executes all steps one after according to configuration. See mpx-rif.pl
+    for high-level description.
+
+  $faker->scandir
+    First step. Just scans the directory according to info from
+    configuration file. It saves info into a yml file (1-scandir.yml) for
+    manual proof reading. Use the STOP option during initialization to abort
+    after this step, e.g. MPX::RIF->new (STOP=>1);
+
+  $self->validate();
+    Validate resulting mpx and check for duplicate mulIds. Log errors.
+
+  $self->writeXML();
+	TODO: maybe I should check if an resource is complete before I xml-ify it
+  $self->stop ($location);
+    Location is the number of the step where stop is called from. If
+    location matches the $self->{STOP}, MPX::RIF stops gracefully and
+    outputs an a log and or debug message (if debug and log are on).
+
+  my $ret=$faker->_dirparser ($path);
+    Calls the dirparser callback specified in config.yml. Expects a single
+    path. Returns a hashref representing one object. If something is
+    returned the result is saved in $self->{data};
+
+    my $object={ key=>value, feature=>blue, }
+
+  $self->_loadStore('path/to/store.yml');
+  $self->_dumpStore('path/to/store.yml');
+  $self->_storeResource ($resource);
+    Stores the resource in the data store. Requires resource to have an id.
+
+    If I don't want redundancy, i.e. the id twice, I need to extract it when
+    I save it and reinstate when I get it back. Sofar I, only access from
+    _resources.
+
+  @arr=$self->_resourceIds();
+    OLD: Don't know how to do this:
+
+    Returns one resource at a time from the resource store. Use in while
+    (preferred) or foreach, e.g.:
+
+     foreach my $resource ($self->_resources()) {
+            #bla
+     }
+
+  my $resource=$self->_getResource ($id);
+FUNCTIONS
+  my $xpc=registerNS ($doc);
+    Expects DOM or doc, never sure about it. Returns xpc.
+
+    Register prefix mpx with http://www.mpx.org/mpx
+
+  testparser($ilepath);
+    Just to illustrate how simple the extension could be. It expects a
+    single filepath and returns a hashref with key/value pairs, like this:
+
+    $object={ key=>value, identNr=>'12345d', }
+
+    might soon be superseded by MPX::RIF::Resource
+
+RATIONALE
+    There are many images. It can take a long to enter them manually in the
+    database. For each item, there are many repetitive information items,
+    e.g. 1000 fotos were made by the same fotographer.
+
+    This little perl tool parses a directory and writes XML/MPX with the
+    metadata. It is good with repetative metadata. Of course, this is not a
+    silver bullett. It is a just a cheap solution that works only if you
+    know your photos well.
+
+    The whole process is broken down in several consecutive steps. State
+    information is dumped a couple of times during executing as yaml, to
+    facilitate proof-reading and error checking. There are debug messages
+    and log messages which should help you finding quirks in your data.
+
+    The tool is configurable. It's written in a haste i.e. no great code,
+    but it should at least be readable.
+
+  my $objId=$self->_lookupObjId;
+    return () on failure.
+
+INTERNAL INTERFACE
+AUTHOR
+    Maurice Mengel <mauricemengel@gmail.com>
+
+COPYRIGHT AND LICENSE
+    This software is copyright (c) 2011 by Maurice Mengel.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
 

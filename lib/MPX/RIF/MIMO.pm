@@ -1,5 +1,8 @@
 package MPX::RIF::MIMO;
-
+BEGIN {
+  $MPX::RIF::MIMO::VERSION = '0.004';
+}
+# ABSTRACT: MIMO specific logic
 use strict;
 use warnings;
 use FindBin;
@@ -15,20 +18,6 @@ use Encode qw(from_to decode);
 #not used
 our $verbose = 0;
 
-=head1 NAME
-
-MPX::RIF::MIMO
-
-This package contains the logic that extracts info from the filenames.
-Parsedir is the only function called from outside. All other functions are
-called from parsedir.
-
-=head2 my $obj=parsedir($path);
-
-obj is a hashref. Might become an object in the future
-
-
-=cut
 
 sub parsedir {
 	my $resource = shift;
@@ -85,7 +74,7 @@ sub parsedir {
 	}
 
 	#identNr
-	my $identNr = identNr($file);
+	my $identNr = identNr( $file, $directories );
 	if ($identNr) {
 		$resource->addFeatures( identNr => $identNr );
 	}
@@ -119,77 +108,115 @@ sub parsedir {
 	return $resource;
 }
 
-=head2 my $identNr=identNr($file);
-
-identNr expects a filename. It will try to extract the identNr from it. On
-failure?
-
-Currently we are looking for identNr with 4/5 elements
-1) A roman literal from I - VII. Roman literal typically indicates the
-   department. Required.
-2) A letter, combination of letters or nls (including variants of nls)
-   This element typically indicates a broad geographic area within the
-   territory the department is responsible for. Or that is number is
-   unknown. Required.
-3) an integer. Required.
-4) a letter or combinations of letters typically indicating the parts
-   of the object. Optional
-5) Sometimes identNrs are not unique and there is nothing you can change
-   about that. In this case they are differentiated by <1>, <2> etc.
-   Optional
-
-$x =~/a|b/; either a or b
-$x =~/a|b|/; either a or b or nothing
-$x =~/(A)sep(B)sep(C)sep|(?(D)sep)||(E)||/; ; #now c is optional, right?
-
-
-=cut
 
 sub identNr {
 	my $file = shift;
+	my $path = shift;
 
 	$file =~ /
 #1st element: VII
 			(I|II|III|IV|V|VI|VII)
 				[_|\s]
-#2nd element: c
-	     	([a-f]|nls|[a-f] nls)
-	       		[_|\s]
-#3rd element: 1234
+#2nd element: c C Ca (optional)
+	     	(?:([A-Za-z]|nls|[A-Za-z]{1,2} nls)
+	       		[_|\s]||)
+#3rd element: Dlg (optional)
+			(?:
+	     	([A-Za-z]{1,2}|nls|[A-Za-z]{1,2} nls)
+	       		[_|\s]||)
+#4th element: 1234
 	       	(\d+)
 				#sep. could also be dot, but has to be there
 	       		[_|\s|\.]
-#4th element: a
+#5th element: a
 			#non-matching group: (?:regexp)
 			(?:
 	        ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-h])
 				#separator only if there is a 4th element
 	       		[_|\s|\.]||)
-#5th element: <1>
+#6th element: <1>
 			(\d?)
 	       /xi;
 
-	#three parts are required
-	if ( !( $1 && $2 && $3 ) ) {
-		my $msg=" +identNr: Cannot extract identNr from $file";
-		log $msg;
-		debug $msg;
-	} else {
-		#required
-		my $identNr = uc($1) . ' ' . $2 . ' ' . $3;
-		#optional
-		$identNr .= ' ' . $4 if $4;
-		$identNr .= ' <' . $5 .'>' if $5;
-		debug " +identNr: $identNr";
-		return $identNr;
+	#VALIDATION
+	#so far we have been a bit too permissive, now we need to test
+	#various conditions and report on failure
+	#1) Signaturen mit VI am Anfang haben entweder nls als zweiten Teil oder
+	#   keinen zweiten Teil. OK
+	#2) zweiter Teil hat immer Grossbuchstaben außer bei VIIer und VIer
 
+	#we always need these parts
+	if ( !( $1 && $4 ) ) {
+		return identErr( 'not 1 and 4', $file, $path );
 	}
-	return ();    #otherwise might return 1 for success
+
+	#test existence of 2 where it has to be
+	#all except $1='VI' need $2
+	if ( $1 ne 'VI' && ( !$2 ) ) {
+		return identErr( "2 not where it should be: $2", $file, $path );
+	}
+
+	#uppercase for 2
+	if ( ( $1 ne 'VII' ) and ( $1 ne 'VI' ) ) {
+		if ( $2 !~ /[A-Z]{1,2}/ ) {
+			return identErr( "no uppercase for 2 $2", $file, $path );
+		}
+	}
+
+	#lowercase for 2
+	if ( $1 eq 'VII' ) {
+		if ( $2 !~ /[a-z]{1,2}/ ) {
+			return identErr( "no lowercase for 2 $2", $file, $path );
+		}
+	}
+
+	#
+	# JOINING
+	#
+
+	#required VI
+	my $identNr = $1;
+
+	#optional a
+	if ($2) {
+		$identNr .= ' ' . $2;
+	}
+
+	#optional Dlg
+	if ($3) {
+		$identNr .= ' ' . $3;
+	}
+
+	#required 1234
+	$identNr .= ' ' . $4;
+
+	#optional a-c
+	if ($5) {
+		$identNr .= ' ' . $5;
+	}
+
+	#optional <1>
+	if ($6) {
+		$identNr .= ' <' . $6 . '>';
+	}
+	debug " +identNr: '$identNr'";
+	return $identNr;
 }
 
-=head2 my $urheber=fotograf($dirs);
 
-=cut
+sub identErr {
+	my $msg  = shift;
+	my $file = shift;
+	my $path = shift;
+
+	$msg =
+	    " +identNr: Cannot extract identNr from $file\n"
+	  . "   $path\n"
+	  . "   $msg";
+	log $msg;
+	debug $msg;
+}
+
 
 sub urheber {
 	my $dirs = shift;
@@ -213,9 +240,6 @@ sub urheber {
 	return $urheber;
 }
 
-=head2 my $farbe=farbe($directories);
-
-=cut
 
 sub farbe {
 	my $dirs = shift;
@@ -243,7 +267,7 @@ sub pref {
 	if ( $file =~ /-([A-Z]).*\.\w+$/ ) {
 		$pref = $1;
 
-		#debug "letter: $1";
+		#debug " letter : $1 ";
 		$pref = alpha2num($pref);
 		debug " +pref $pref";
 		if ( $pref !~ /\d+/ ) {
@@ -258,13 +282,6 @@ sub pref {
 	return 1;
 }
 
-=head2 my $freigabe_str=freigabe ($file);
-
-Parses the file name for -x signalling that it should be released on the web.
-Expects filename and returns the string "web". If it doesn't find the signal
-it returns empty.
-
-=cut
 
 sub freigabe {
 	my $file = shift;
@@ -276,11 +293,6 @@ sub freigabe {
 	return;
 }
 
-=head2 my $winpath=cygpath($nixPath);
-
-Quick,dirty and VERY slow.
-
-=cut
 
 sub cygpath {
 	my $nix_path = shift;
@@ -298,13 +310,6 @@ sub cygpath {
 	}
 }
 
-=head2 my $winpath=cyg2win($nixPath);
-
-Quick, dirty and fast!
-
-I eliminate trailing slash.
-
-=cut
 
 sub cyg2win {
 	my $nix = shift;
@@ -322,7 +327,7 @@ sub cyg2win {
 }
 
 sub alpha2num {
-	my $in=shift;
+	my $in = shift;
 
 	my %tr = (
 		A => 1,
@@ -359,3 +364,95 @@ sub alpha2num {
 }
 
 1;
+
+__END__
+=pod
+
+=head1 NAME
+
+MPX::RIF::MIMO - MIMO specific logic
+
+=head1 VERSION
+
+version 0.004
+
+=head1 DESCRIPTION
+
+This package contains the logic that extracts info from the filenames.
+Parsedir is the only function called from outside. All other functions are
+called from parsedir.
+
+=head2 my $obj=parsedir($path);
+
+obj is a hashref. Might become an object in the future
+
+=head2 my $identNr=identNr($file);
+
+identNr expects a filename. It will try to extract the identNr from it. On
+failure?
+
+Currently we are looking for identNr with 4/5 elements
+1) A roman literal from I - VII. Roman literal typically indicates the
+   department. Required.
+2) A letter, combination of letters or nls (including variants of nls)
+   This element typically indicates a broad geographic area within the
+   territory the department is responsible for. Or that is number is
+   unknown. Required, except in VI.
+3) 'Dlg'. Optional.
+4) an integer. Required.
+5) a letter or combinations of letters typically indicating the parts
+   of the object. Optional
+6) Sometimes identNrs are not unique and there is nothing you can change
+   about that. In this case they are differentiated by <1>, <2> etc.
+   Optional
+
+$x =~/a|b/; either a or b
+$x =~/a|b|/; either a or b or nothing
+$x =~/(A)sep(B)sep(C)sep|(?(D)sep)||(E)||/; ; #now c is optional, right?
+
+=head1 FUNCTIONS
+
+=head2 identErr($msg, $file, $path);
+
+logs and debugs a simple message.
+
+=head2 my $pref=pref($file);
+	Extracts priority from filename.
+
+=head2 my $freigabe_str=freigabe ($file);
+
+Parses the file name for -x signalling that it should be released on the web.
+Expects filename and returns the string "web". If it doesn't find the signal
+it returns empty.
+
+=head2 my $num=alpha2num ($alpha);
+	Simple translation of A to 1, B to 2 etc.
+
+=head2 my $urheber=$urheber($dirs);
+	Extracts fotograph/urheber from directories
+
+=head2 my $farbe=farbe($directories);
+
+=head2 my $winpath=cygpath($nixPath);
+
+Quick,dirty and VERY slow.
+
+=head2 my $winpath=cyg2win($nixPath);
+
+Quick, dirty and fast!
+
+I eliminate trailing slash.
+
+=head1 AUTHOR
+
+Maurice Mengel <mauricemengel@gmail.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Maurice Mengel.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+

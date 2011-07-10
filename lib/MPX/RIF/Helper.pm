@@ -1,6 +1,9 @@
 package MPX::RIF::Helper;
+BEGIN {
+  $MPX::RIF::Helper::VERSION = '0.004';
+}
 
-#I put here stuff that I want to inherit from elsewhere in MPX::RIF
+# ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
 
 use Exporter;
 use Log::Handler;
@@ -11,23 +14,6 @@ use Log::Handler;
 our $debug=0;
 our $log=init_log();    #will store the logger object
 
-=head1 SYNOPSIS
-
-	use MPX::RIF::Helper qw(debug log);
-
-	MPX::RIF::Helper::init_log($logfile); #$logfile is optional
-	log "blah";
-
-	MPX::RIF::Helper::init_debug(); #activates debug
-	debug "blah"
-
-
-=head2 debug
-
-If debug is activated during initialization of MPX::RIF, debug outputs messages
-to the STDOUT during runtime.
-
-=cut
 
 sub debug {
 	my $msg = shift;
@@ -36,14 +22,6 @@ sub debug {
 	}
 }
 
-=head2 log
-
-If log is activated during initialization of MPX::RIF, log messages are written
-to file during runtime. I use this to store warnings which indicate mapping
-problems, missing information or any other failure indicating that the result
-is not valid.
-
-=cut
 
 sub log {
 	my $msg = shift;
@@ -53,21 +31,11 @@ sub log {
 	}
 }
 
-=head2 MPX::RIF::Helper::init_debug();
-
-	activates debug messages during runtime on screen
-
-=cut
 
 sub init_debug {
 	$debug=1;
 }
 
-=head2 MPX::RIF::Helper::init_log($logfile);
-
-	$logfile is optional.
-
-=cut
 
 
 sub init_log {
@@ -90,11 +58,6 @@ sub init_log {
 }
 
 
-=head2 unlink_log ($logfile);
-
-Deletes logfile, e.g. before init. Returns success on success.
-
-=cut
 
 
 sub unlink_log {
@@ -120,3 +83,62 @@ sub unlink_log {
 }
 
 1;
+
+__END__
+=pod
+
+=head1 NAME
+
+MPX::RIF::Helper - - For stuff that I want to inherit from elsewhere in MPX::RIF
+
+=head1 VERSION
+
+version 0.004
+
+=head1 SYNOPSIS
+
+	use MPX::RIF::Helper qw(debug log);
+
+	MPX::RIF::Helper::init_log($logfile); #$logfile is optional
+	log "blah";
+
+	MPX::RIF::Helper::init_debug(); #activates debug
+	debug "blah"
+
+=head2 debug
+
+If debug is activated during initialization of MPX::RIF, debug outputs messages
+to the STDOUT during runtime.
+
+=head2 log
+
+If log is activated during initialization of MPX::RIF, log messages are written
+to file during runtime. I use this to store warnings which indicate mapping
+problems, missing information or any other failure indicating that the result
+is not valid.
+
+=head2 MPX::RIF::Helper::init_debug();
+
+	activates debug messages during runtime on screen
+
+=head2 MPX::RIF::Helper::init_log($logfile);
+
+	$logfile is optional.
+
+=head2 unlink_log ($logfile);
+
+Deletes logfile, e.g. before init. Returns success on success.
+
+=head1 AUTHOR
+
+Maurice Mengel <mauricemengel@gmail.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Maurice Mengel.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+

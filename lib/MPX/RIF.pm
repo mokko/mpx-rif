@@ -85,9 +85,7 @@ messages which should help you finding quirks in your data.
 The tool is configurable. It's written in a haste i.e. no great code, but
 it should at least be readable.
 
-=head1 SUBROUTINES/METHODS
-
-=head2 my $faker=MPX::RIF::new (%CONFIG);
+=method my $faker=MPX::RIF::new (%CONFIG);
 
 REQUIRED
 config is the path to a yaml configuration file.
@@ -134,7 +132,7 @@ sub new {
 	return $self;
 }
 
-=head2 $faker->lookupObjId ('path/to/big-file.mpx');
+=method $faker->lookupObjId ('path/to/big-file.mpx');
 
 3rd step. Associate each resource with an objId. Also filter stuff out
 that does not have required information.
@@ -179,7 +177,7 @@ sub lookupObjId {
 
 }
 
-=head2 $faker->$filter;
+=method $faker->$filter;
 
 4th step. Drops resources from store if they don't have specified keys.
 
@@ -280,7 +278,7 @@ sub _lookupObjId {
 	return $objId;
 }
 
-=head2 $faker->parsedir
+=method $faker->parsedir
 
 Second step.
 
@@ -310,7 +308,7 @@ sub parsedir {
 
 }
 
-=head2 $faker->run();
+=method $faker->run();
 
 Executes all steps one after according to configuration. See mpx-rif.pl for
 high-level description.
@@ -393,7 +391,7 @@ sub run {
 	debug "done\n";
 }
 
-=head2 $faker->scandir
+=method $faker->scandir
 
 First step. Just scans the directory according to info from configuration file.
 It saves info into a yml file (1-scandir.yml) for manual proof reading. Use the
@@ -433,7 +431,7 @@ sub scandir {
 	$self->stop(1);
 }
 
-=head2 $self->validate();
+=method $self->validate();
 
 Validate resulting mpx and check for duplicate mulIds. Log errors.
 
@@ -505,7 +503,7 @@ sub registerNS {
 	return $xpc;
 }
 
-=head2 $self->writeXML();
+=method $self->writeXML();
 	TODO: maybe I should check if an resource is complete before I xml-ify it
 
 =cut
@@ -607,9 +605,7 @@ sub writeXML {
 	$self->{output} = $output;
 }
 
-=head1 HELPER METHODS
-
-=head2 $self->stop ($location);
+=method $self->stop ($location);
 
 Location is the number of the step where stop is called from. If location
 matches the $self->{STOP}, MPX::RIF stops gracefully and outputs an a
@@ -633,7 +629,7 @@ sub stop {
 	exit 0;
 }
 
-=head2 testparser($ilepath);
+=func testparser($ilepath);
 
 Just to illustrate how simple the extension could be. It expects a single
 filepath and returns a hashref with key/value pairs, like this:
@@ -770,10 +766,6 @@ sub _config {
 	}
 }
 
-=head2 if ($self->_dirparserDefined)
-
-=cut
-
 sub _dirparserDefined {
 	my $self = shift;
 	no strict 'refs';
@@ -786,7 +778,7 @@ sub _dirparserDefined {
 	#todo: should I return 0 on fail?
 }
 
-=head2 my $ret=$faker->dirparser ($path);
+=method my $ret=$faker->_dirparser ($path);
 
 Calls the dirparser callback specified in config.yml. Expects a single path.
 Returns a hashref representing one object. If something is returned the result
@@ -830,7 +822,7 @@ sub _loadMPX {
 	$self->{xpc} = $xpc;
 }
 
-=head2 $self->_loadStore('path/to/store.yml');
+=method $self->_loadStore('path/to/store.yml');
 =cut
 
 #load store from YAML file.
@@ -851,7 +843,7 @@ sub _loadStore {
 	$self->{data} = $data;
 }
 
-=head2 $self->_dumpStore('path/to/store.yml');
+=method $self->_dumpStore('path/to/store.yml');
 =cut
 
 sub _dumpStore {
@@ -877,7 +869,7 @@ sub _loadConfig {
 	return LoadFile( $opts->{CONFIG} );
 }
 
-=head2 	$self->_storeResource ($resource);
+=method	$self->_storeResource ($resource);
 
 Stores the resource in the data store. Requires resource to have an id.
 
@@ -936,7 +928,7 @@ sub _testData {
 	exit 0;
 }
 
-=head @arr=$self->_resourceIds();
+=method @arr=$self->_resourceIds();
 
 
 OLD: Don't know how to do this:
@@ -974,7 +966,7 @@ sub _resourceIds {
 	#return keys( %{ $self->{data} } );
 }
 
-=head2 my $resource=$self->_getResource ($id);
+=method my $resource=$self->_getResource ($id);
 
 =cut
 
@@ -1065,44 +1057,5 @@ sub _unwrap {
 	#now dom
 	return $stylesheet->transform( $response->toDOM );
 }
-
-
-
-=head1 AUTHOR
-
-Maurice Mengel, C<< <mauricemengel at gmail.com> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-mpx-rif at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=MPX-RIF>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc MPX::RIF
-
-
-You can also look for information at:
-
-github.com/mokko/mpx-rif
-
-=head1 ACKNOWLEDGEMENTS
-
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright 2011 Maurice Mengel.
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
-
-See http://dev.perl.org/licenses/ for more information.
-
-
-=cut
 
 1;    # End of MPX::RIF

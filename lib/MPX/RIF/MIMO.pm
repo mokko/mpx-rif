@@ -1,5 +1,5 @@
 package MPX::RIF::MIMO;
-
+# ABSTRACT: MIMO specific logic
 use strict;
 use warnings;
 use FindBin;
@@ -15,9 +15,7 @@ use Encode qw(from_to decode);
 #not used
 our $verbose = 0;
 
-=head1 NAME
-
-MPX::RIF::MIMO
+=head1 DESCRIPTION
 
 This package contains the logic that extracts info from the filenames.
 Parsedir is the only function called from outside. All other functions are

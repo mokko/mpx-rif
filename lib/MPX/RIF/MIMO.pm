@@ -165,7 +165,7 @@ sub identNr {
 #5th element: a
 			#non-matching group: (?:regexp)
 			(?:
-	        ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-h])
+	        ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-z]{1,2})
 				#separator only if there is a 4th element
 	       		[_|\s|\.]||)
 #6th element: <1>
@@ -187,7 +187,7 @@ sub identNr {
 	#test existence of 2 where it has to be
 	#all except $1='VI' need $2
 	if ( $1 ne 'VI' && ( !$2 ) ) {
-		return identErr( "identNr parser: 2 not where it should be: ", $file, $path ); 
+		return identErr( "identNr parser: 2 not where it should be: ", $file, $path );
 	}
 
 	#uppercase for 2

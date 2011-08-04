@@ -176,7 +176,7 @@ sub resizeJpg {
 	my $old=shift;
 	my $new=shift;
 
-	debug "Enter resizeJpg";
+	#debug "Enter resizeJpg";
 
 	if (!$old) {
 		die "resizeJpg: no file name old!";

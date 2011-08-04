@@ -1,6 +1,6 @@
 package MPX::RIF;
 BEGIN {
-  $MPX::RIF::VERSION = '0.005';
+  $MPX::RIF::VERSION = '0.06';
 }
 # ABSTRACT: build cheap mpx from filenames etc.
 
@@ -168,17 +168,18 @@ sub _lookupObjId {
 	#return empty handed if no objId found
 	if ( !@nodes ) {
 		my $msg = "'$identNr' not found, objId missing";
+		#debug $msg;
 		log $msg;
 
 		#debug "xpath returns zero nodes";
-		return ();
+		return;
 	}
 
 	if ( scalar @nodes > 1 ) {
 		my $msg = "IdentNr $identNr not unique in mpx " . $self->{lookup};
 		log $msg;
-		debug $msg;
-		return ();
+		#debug $msg;
+		return;
 	}
 
 	#debug "nodes found" . scalar @nodes;
@@ -363,7 +364,14 @@ sub validate {
 		$mulId = $mulId->getValue;
 		$seen{$mulId}++;
 		if ( $seen{$mulId} > 1 ) {
+			#results contains multiple nodes
 			my $msg = "mulId $mulId not unique!";
+			my @results=$xpc->findnodes("/mpx:museumPlusExport/mpx:multimediaobjekt[\@mulId = $mulId]");
+			foreach (@results) {
+				$_    = registerNS($_);
+				$msg.="\n   ".$_->findvalue('mpx:multimediaPfadangabe').'\\';
+				$msg.=$_->findvalue('mpx:multimediaDateiname').'.jpg';
+			}
 			debug $msg;
 			log $msg;
 		}
@@ -876,7 +884,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.005
+version 0.06
 
 =head1 SYNOPSIS
 

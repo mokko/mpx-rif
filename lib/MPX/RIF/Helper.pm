@@ -1,6 +1,6 @@
 package MPX::RIF::Helper;
 BEGIN {
-  $MPX::RIF::Helper::VERSION = '0.005';
+  $MPX::RIF::Helper::VERSION = '0.06';
 }
 
 # ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
@@ -93,7 +93,7 @@ MPX::RIF::Helper - - For stuff that I want to inherit from elsewhere in MPX::RIF
 
 =head1 VERSION
 
-version 0.005
+version 0.06
 
 =head1 SYNOPSIS
 

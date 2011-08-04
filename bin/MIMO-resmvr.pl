@@ -123,7 +123,7 @@ sub resizeJpg {
 	my $old=shift;
 	my $new=shift;
 
-	debug "Enter resizeJpg";
+	#debug "Enter resizeJpg";
 
 	if (!$old) {
 		die "resizeJpg: no file name old!";
@@ -337,13 +337,14 @@ MIMO-resmvr.pl - resource mover for MIMO
 
 =head1 VERSION
 
-version 0.005
+version 0.06
 
 =head1 SYNOPSIS
 
 MIMO-resmvr.pl [-d] file.mpx
 
 	TODO:
+
 	-p is a plan only. No file is actually copied.
 
 =head1 DESCRIPTION

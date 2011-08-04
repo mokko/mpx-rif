@@ -152,7 +152,7 @@ sub identNr {
 			(I|II|III|IV|V|VI|VII)
 				[_|\s]
 #2nd element: c C Ca (optional)
-	     	(?:([A-Za-z]|nls|[A-Za-z]{1,2} nls)
+	     	(?:([A-Za-z]|Ca|nls|[A-Za-z]{1,2} nls)
 	       		[_|\s]||)
 #3rd element: Dlg (optional)
 			(?:
@@ -187,7 +187,7 @@ sub identNr {
 	#test existence of 2 where it has to be
 	#all except $1='VI' need $2
 	if ( $1 ne 'VI' && ( !$2 ) ) {
-		return identErr( "2 not where it should be: $2", $file, $path );
+		return identErr( "identNr parser: 2 not where it should be: ", $file, $path ); 
 	}
 
 	#uppercase for 2
@@ -276,6 +276,13 @@ sub urheber {
 		return ();
 	}
 
+	#wenn noch kein Urheber ermittelt, gib anonym an
+	if ($urheber =~/farbig|s_w|MIMO-JPGS_Ready-To-Go/) {
+		#debug "AUSOOOOOOOOOOORTIEREN $urheber";
+		$urheber= "anonym";
+	}
+
+
 	$urheber =~ s!_! !g;
 
 	debug " +fotograf: $urheber";
@@ -298,7 +305,16 @@ sub farbe {
 		return ();
 	}
 
-	#$farbe =~ s/_/ /g;
+	#wenn noch kein Urheber ermittelt, gib anonym an
+	if ($farbe !~ /farbig|s_w/) {
+		$farbe = $dirs[-2];
+		   if ($farbe !~ /farbig|s_w/) {
+			return;
+		   }
+	}
+
+	$farbe =~ s/_/ /g;
+
 
 	debug " +farbe: $farbe";
 	return $farbe;

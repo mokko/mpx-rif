@@ -358,7 +358,7 @@ sub freigabe {
 	my $file = shift;
 
 	if ( $file =~ / x\.\w+$/i ) {
-		debug " +freigabe";
+		debug " +freigabe 'Web'";
 		return "web";
 	}
 	return;

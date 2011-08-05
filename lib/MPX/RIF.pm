@@ -615,7 +615,7 @@ sub writeXML {
 
 	log "$i mume records written";
 
-	debug "about to write XML to $self->{output}";
+	print "about to write XML to $self->{output}\n";
 	open( my $fh, '>:encoding(UTF-8)', $self->{output} ) or die $!;
 	print $fh $output;
 	close $fh;

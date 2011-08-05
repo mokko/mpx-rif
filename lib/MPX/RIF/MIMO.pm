@@ -447,10 +447,15 @@ sub alpha2num {
 		Z => 26,
 	);
 
+	if ($in =~/\d/) {
+		return $in;
+	}
+
 	if ( $tr{$in} ) {
 		return $tr{$in};
 	}
-	return "alpha2num error";
+
+	warn "alpha2num error $in";
 }
 
 1;

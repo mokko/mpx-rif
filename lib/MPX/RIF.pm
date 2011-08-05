@@ -1,6 +1,6 @@
 package MPX::RIF;
 BEGIN {
-  $MPX::RIF::VERSION = '0.06';
+  $MPX::RIF::VERSION = '0.07';
 }
 # ABSTRACT: build cheap mpx from filenames etc.
 
@@ -33,7 +33,6 @@ our $temp = {
 	2 => '2-parsedir.yml',
 	3 => '3-objId.yml',
 	4 => '4-filter.yml',
-	5 => 'mume.mpx'
 };
 
 
@@ -422,19 +421,20 @@ sub writeXML {
 		my $time = time();
 		my $now  = ConvertDate( ParseDateString("epoch $time") );
 
-		#old mulId
-		#my ( $sec, $msec ) = gettimeofday;
-		#my $mulId = $time . $msec;
-
-		#new mulId
+		#new mulId now with number dependent file suffix
 		my $objId = $self->{data}->{$id}->get('verknüpftesObjekt');
 		my $pref  = $self->{data}->{$id}->get('pref');
+		my $suffix  = $self->{data}->{$id}->get('multimediaErweiterung');
+		$suffix=substr $suffix,0,1;
+		$suffix=MPX::RIF::MIMO::alpha2num($suffix);
+		$suffix=sprintf ("%05d",$suffix);
+		#debug "SSSSSSSSSSSSSSSSSuffix: ".$suffix;
 
 		#current mpx required mulID to be an integer
 		my $mulId;
 		if ( $objId && $pref ) {
-			$mulId = $objId . '00000' . $pref;
-			debug "NEW mulId $mulId";
+			$mulId = $objId . $suffix . $pref;
+			#debug "NEW mulId $mulId";
 
 			my %attributes = (
 				'exportdatum' => $now,
@@ -474,8 +474,8 @@ sub writeXML {
 
 	log "$i mume records written";
 
-	debug "about to write XML";
-	open( my $fh, '>:encoding(UTF-8)', $temp->{5} ) or die $!;
+	debug "about to write XML to $self->{output}";
+	open( my $fh, '>:encoding(UTF-8)', $self->{output} ) or die $!;
 	print $fh $output;
 	close $fh;
 
@@ -564,12 +564,12 @@ sub _config {
 	#	debug "$_\n   $self->{$_}";
 	#}
 
-	my @mandatory = qw/scandir dirparser dataProvider/;
+	my @mandatory = qw/scandir dirparser dataProvider output/;
 
 	my $err = 0;
 	foreach my $item (@mandatory) {
 		if ( !$self->{$item} ) {
-			print "Configuration problem: Mandatory item $item missing in "
+			print "Configuration problem: Mandatory item '$item' missing in "
 			  . "config file\n";
 			$err++;
 		}
@@ -884,7 +884,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.06
+version 0.07
 
 =head1 SYNOPSIS
 

@@ -1,5 +1,9 @@
 Revision history for MPX-RIF
-
+0.07 - 2011-08-05
+	mpx-rif.pl
+		- fake mulId depends now on file ending
+		- new config value for output file to allow different outputs for
+		  images, audio and video.
 0.06 - 2011-08-04
 	mpx-rif.pl:
 		better diagnostic message for multiple mulId error

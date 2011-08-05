@@ -1,6 +1,6 @@
 package MPX::RIF::MIMO;
 BEGIN {
-  $MPX::RIF::MIMO::VERSION = '0.07';
+  $MPX::RIF::MIMO::VERSION = '0.08';
 }
 # ABSTRACT: MIMO specific logic
 use strict;
@@ -303,7 +303,7 @@ sub freigabe {
 	my $file = shift;
 
 	if ( $file =~ / x\.\w+$/i ) {
-		debug " +freigabe";
+		debug " +freigabe 'Web'";
 		return "web";
 	}
 	return;
@@ -394,7 +394,7 @@ MPX::RIF::MIMO - MIMO specific logic
 
 =head1 VERSION
 
-version 0.07
+version 0.08
 
 =head1 DESCRIPTION
 

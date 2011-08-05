@@ -1,7 +1,10 @@
 Revision history for MPX-RIF
+0.08 - 2011-08-05
+	mpx-rif.pl
+		- fake mulId now depends on first three letters of file ending
 0.07 - 2011-08-05
 	mpx-rif.pl
-		- fake mulId depends now on file ending
+		- fake mulId now depends on file ending
 		- new config value for output file to allow different outputs for
 		  images, audio and video.
 0.06 - 2011-08-04

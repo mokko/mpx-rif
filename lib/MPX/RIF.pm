@@ -1,7 +1,8 @@
 package MPX::RIF;
 BEGIN {
-  $MPX::RIF::VERSION = '0.07';
+  $MPX::RIF::VERSION = '0.08';
 }
+
 # ABSTRACT: build cheap mpx from filenames etc.
 
 use warnings;
@@ -167,6 +168,7 @@ sub _lookupObjId {
 	#return empty handed if no objId found
 	if ( !@nodes ) {
 		my $msg = "'$identNr' not found, objId missing";
+
 		#debug $msg;
 		log $msg;
 
@@ -177,6 +179,7 @@ sub _lookupObjId {
 	if ( scalar @nodes > 1 ) {
 		my $msg = "IdentNr $identNr not unique in mpx " . $self->{lookup};
 		log $msg;
+
 		#debug $msg;
 		return;
 	}
@@ -363,19 +366,23 @@ sub validate {
 		$mulId = $mulId->getValue;
 		$seen{$mulId}++;
 		if ( $seen{$mulId} > 1 ) {
+
 			#results contains multiple nodes
-			my $msg = "mulId $mulId not unique!";
-			my @results=$xpc->findnodes("/mpx:museumPlusExport/mpx:multimediaobjekt[\@mulId = $mulId]");
+			my $msg     = "mulId $mulId not unique!";
+			my @results = $xpc->findnodes(
+				"/mpx:museumPlusExport/mpx:multimediaobjekt[\@mulId = $mulId]");
 			foreach (@results) {
-				$_    = registerNS($_);
-				$msg.="\n   ".$_->findvalue('mpx:multimediaPfadangabe').'\\';
-				$msg.=$_->findvalue('mpx:multimediaDateiname').'.jpg';
+				$_ = registerNS($_);
+				$msg .=
+				  "\n   " . $_->findvalue('mpx:multimediaPfadangabe') . '\\';
+				$msg .= $_->findvalue('mpx:multimediaDateiname') . '.jpg';
 			}
 			debug $msg;
 			log $msg;
 		}
 	}
 }
+
 
 sub registerNS {
 	my $doc = shift;
@@ -422,18 +429,22 @@ sub writeXML {
 		my $now  = ConvertDate( ParseDateString("epoch $time") );
 
 		#new mulId now with number dependent file suffix
-		my $objId = $self->{data}->{$id}->get('verknüpftesObjekt');
-		my $pref  = $self->{data}->{$id}->get('pref');
-		my $suffix  = $self->{data}->{$id}->get('multimediaErweiterung');
-		$suffix=substr $suffix,0,1;
-		$suffix=MPX::RIF::MIMO::alpha2num($suffix);
-		$suffix=sprintf ("%05d",$suffix);
-		#debug "SSSSSSSSSSSSSSSSSuffix: ".$suffix;
+		my $objId  = $self->{data}->{$id}->get('verknüpftesObjekt');
+		my $pref   = $self->{data}->{$id}->get('pref');
+		my $suffix = $self->{data}->{$id}->get('multimediaErweiterung');
+		$suffix =
+		    sprintf( "%02d", MPX::RIF::MIMO::alpha2num( substr $suffix, 0, 1 ) )
+		  . sprintf( "%02d", MPX::RIF::MIMO::alpha2num( substr $suffix, 1, 1 ) )
+		  . sprintf( "%02d",
+			MPX::RIF::MIMO::alpha2num( substr $suffix, 2, 1 ) );
+
+		#debug "SSSSSSSSSSSSSSSSSuffix: " . $suffix;
 
 		#current mpx required mulID to be an integer
 		my $mulId;
 		if ( $objId && $pref ) {
 			$mulId = $objId . $suffix . $pref;
+
 			#debug "NEW mulId $mulId";
 
 			my %attributes = (
@@ -853,7 +864,7 @@ sub _harvest {
 }
 
 sub _unwrap {
-	my $response=shift or die "Need response";
+	my $response = shift or die "Need response";
 
 	my $unwrapFN = realpath(
 		File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
@@ -884,7 +895,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.07
+version 0.08
 
 =head1 SYNOPSIS
 

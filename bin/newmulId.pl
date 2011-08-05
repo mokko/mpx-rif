@@ -101,7 +101,7 @@ newmulId.pl - create new mulIds for mume objects
 
 =head1 VERSION
 
-version 0.08
+version 0.09
 
 =head1 SYNOPSIS
 

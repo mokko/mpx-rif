@@ -1,6 +1,6 @@
 package MPX::RIF::MIMO;
 BEGIN {
-  $MPX::RIF::MIMO::VERSION = '0.08';
+  $MPX::RIF::MIMO::VERSION = '0.09';
 }
 # ABSTRACT: MIMO specific logic
 use strict;
@@ -377,10 +377,15 @@ sub alpha2num {
 		Z => 26,
 	);
 
+	if ($in =~/\d/) {
+		return $in;
+	}
+
 	if ( $tr{$in} ) {
 		return $tr{$in};
 	}
-	return "alpha2num error";
+
+	warn "alpha2num error $in";
 }
 
 1;
@@ -394,7 +399,7 @@ MPX::RIF::MIMO - MIMO specific logic
 
 =head1 VERSION
 
-version 0.08
+version 0.09
 
 =head1 DESCRIPTION
 

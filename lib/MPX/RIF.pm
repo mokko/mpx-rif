@@ -1,6 +1,6 @@
 package MPX::RIF;
 BEGIN {
-  $MPX::RIF::VERSION = '0.08';
+  $MPX::RIF::VERSION = '0.09';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
@@ -485,7 +485,7 @@ sub writeXML {
 
 	log "$i mume records written";
 
-	debug "about to write XML to $self->{output}";
+	print "about to write XML to $self->{output}\n";
 	open( my $fh, '>:encoding(UTF-8)', $self->{output} ) or die $!;
 	print $fh $output;
 	close $fh;
@@ -895,7 +895,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.08
+version 0.09
 
 =head1 SYNOPSIS
 

@@ -413,7 +413,10 @@ sub cyg2win {
 	Simple translation of A to 1, B to 2 etc.
 =cut
 sub alpha2num {
-	my $in = shift;
+	my $in = shift || return;
+
+	$in=uc($in);
+	#debug "ALPHA2NUM: $in";
 
 	my %tr = (
 		A => 1,
@@ -447,6 +450,7 @@ sub alpha2num {
 	if ( $tr{$in} ) {
 		return $tr{$in};
 	}
+	return "alpha2num error";
 }
 
 1;

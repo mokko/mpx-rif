@@ -1,7 +1,7 @@
 Revision history for MPX-RIF
 0.09 - 2011-08-05
 	mpx-rif.pl
-		-fake mulId letters can be numbers
+		-fake mulId "letters" from file ending can be numbers ;-)
 0.08 - 2011-08-05
 	mpx-rif.pl
 		- fake mulId now depends on first three letters of file ending

@@ -1042,22 +1042,14 @@ sub _harvest {
 	if ( !$response->is_error ) {
 		debug "About to write harvest to $mpx_fn";
 
-		open( my $fh, '> ', $mpx_fn )
-		  or die 'Error: Cannot write to file:' . $mpx_fn . '! ' . $!;
-
-		#unwrap, $response is now in dom
-		#bad style, but i fear memory problems otherwise
-		$response = _unwrap($response);
-
-		#test if output_as_bytes results in better indent
-		#print $fh $response->output_as_bytes
-		print $fh $response->toString;
-		close $fh;
+		my $dom = _unwrap($response->toDOM);
+		undef $response;
+		$dom->toFile($mpx_fn,2);
 	}
 }
 
 sub _unwrap {
-	my $response = shift or die "Need response";
+	my $dom = shift or die "Need response";
 
 	my $unwrapFN = realpath(
 		File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
@@ -1074,7 +1066,7 @@ sub _unwrap {
 	my $stylesheet = $xslt->parse_stylesheet($style_doc);
 
 	#now dom
-	return $stylesheet->transform( $response->toDOM );
+	return $stylesheet->transform( $dom );
 }
 
 1;    # End of MPX::RIF

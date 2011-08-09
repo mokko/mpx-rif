@@ -1,7 +1,14 @@
 Revision history for MPX-RIF
+0.010- 2011-08-06
+	rename-images.pl - little tool to rename images which don't have
+	priority (-A) in the file name.
+
+	Changed the way the inbuilt harvester saves records. I hope this 
+	saves memory. Now uses LibXML's $dom->toFile.
+
 0.09 - 2011-08-05
 	mpx-rif.pl
-		-fake mulId letters can be numbers
+		-fake mulId "letters" from file ending can be numbers ;-)
 0.08 - 2011-08-05
 	mpx-rif.pl
 		- fake mulId now depends on first three letters of file ending

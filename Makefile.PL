@@ -23,7 +23,8 @@ my %WriteMakefileArgs = (
   'EXE_FILES' => [
     'bin/MIMO-resmvr.pl',
     'bin/mpx-rif.pl',
-    'bin/newmulId.pl'
+    'bin/newmulId.pl',
+    'bin/rename-images.pl'
   ],
   'LICENSE' => 'perl',
   'NAME' => 'MPX::RIF',
@@ -34,6 +35,7 @@ my %WriteMakefileArgs = (
     'Encode' => '0',
     'Exporter' => '0',
     'File::Copy' => '0',
+    'File::Find' => '0',
     'File::Find::Rule' => '0',
     'File::Spec' => '0',
     'FindBin' => '0',
@@ -52,7 +54,7 @@ my %WriteMakefileArgs = (
     'YAML::XS' => '0',
     'utf8' => '0'
   },
-  'VERSION' => '0.09',
+  'VERSION' => '0.010',
   'test' => {
     'TESTS' => 't/*.t'
   }

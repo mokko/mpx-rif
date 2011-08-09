@@ -27,6 +27,7 @@
             "Encode" : 0,
             "Exporter" : 0,
             "File::Copy" : 0,
+            "File::Find" : 0,
             "File::Find::Rule" : 0,
             "File::Spec" : 0,
             "FindBin" : 0,
@@ -66,6 +67,6 @@
          "web" : "https://github.com/mokko/mpx-rif"
       }
    },
-   "version" : "0.09"
+   "version" : "0.010"
 }
 

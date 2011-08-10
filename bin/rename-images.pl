@@ -1,11 +1,33 @@
 #!/usr/bin/perl
+# ABSTRACT: add priority (-A) to file names which have none
+# PODNAME: rename-images.pl
 
 use strict;
 use warnings;
 use File::Find;
 use File::Copy;
+use Getopt::Std;
+use Pod::Usage;
 
-#add -A if no priority specified in filename
+my $opts = {};
+getopts( 'hx', $opts );
+pod2usage( -verbose => 2 ) if ( $opts->{h} );
+
+=head1 SYNOPSIS
+
+rename-images.pl -x directory
+
+=head2 Command Line Options
+
+=over 1
+
+=item -h	Usage
+
+=item -x	do the renaming (otherwise just show what you do)
+
+=back
+
+=cut
 
 if ( !$ARGV[0] ) {
 	print "Error: Need dir to start my work!\n";
@@ -15,26 +37,32 @@ if ( !-d $ARGV[0] ) {
 	print "Error: Input is no dir\n";
 }
 
+if ($opts->{x}) {
+	print "x mode: do the actual moving and not just showing it\n";
+} else {
+	print "show mode: just show what you would move if you were in -x mode\n";
+}
+
 find( \&wanted, $ARGV[0] );
 
 sub wanted {
-
 	#	 $File::Find::dir
 	#	 $_ filename in dir
 	#	 $File::Find::name 	complete path/name
 	return if $_ eq '.';
-	print "test $_\n";
+	#print "test $_\n";
 
 	if ( $_ !~ /\-/ ) {
-		my $old=$_;
-		$_=~ s/\s?(x?)\s?(\.\w*)$//;
+		my $old = $_;
+		$_ =~ s/\s?(x?)\s?(\.\w*)$//;
 		if ($2) {
-			my $new=$_.' -A';
-			$new.=' '.$1 if $1; #x if there is an x
-			$new.=$2;
+			my $new = $_ . ' -A';
+			$new .= ' ' . $1 if $1;    #x if there is an x
+			$new .= $2;
 			print "->mv '$old' '$new'\n";
-			#move ($old, $new);
+			if ( $opts->{x} ) {
+				move( $old, $new ) or die "cant move";
+			}
 		}
 	}
-
 }

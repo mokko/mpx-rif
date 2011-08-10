@@ -1,4 +1,17 @@
 Revision history for MPX-RIF
+0.011- 2011-08-10
+	rename-images.pl - has -x option to switch on actual moving versus
+	just showing what would be moved.
+
+	mpx-rif.pl: I played around with the included harvester to use less
+	memory, but all attempts are in vain. I currently need around 400 MB
+	of memory to harvest all MIMO records (~10k) in mpx. I didn't try
+	SAX yet, but I don't see how that could help. Tried only LibXML's
+	toFile versus toString + perl's string function. Very little 
+	difference. I tried to be clever with perl's in-memory variables,
+	but no difference either. Next I guess I would have to ask on the
+	perl-xml list
+
 0.010- 2011-08-06
 	rename-images.pl - little tool to rename images which don't have
 	priority (-A) in the file name.

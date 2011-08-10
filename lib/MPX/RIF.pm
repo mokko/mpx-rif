@@ -1040,17 +1040,26 @@ sub _harvest {
 	}
 
 	if ( !$response->is_error ) {
-		debug "About to write harvest to $mpx_fn";
-
-		my $dom = _unwrap($response->toDOM);
-		undef $response;
-		$dom->toFile($mpx_fn,2);
+		#scalar ref so we can avoid having two of them in memory
+		_unwrapAndWrite ($mpx_fn, \$response);
 	}
+
 }
+
+sub _unwrapAndWrite {
+		my $mpx_fn=shift or die "Error!";
+		my $big=shift or die "Error!"; # scalar ref to response
+		debug "Start unwrapping...";
+		${$big} = _unwrap(${$big}->toDOM);
+		debug "About to write harvest to $mpx_fn";
+		${$big}->toFile($mpx_fn,0);
+		undef ${$big};
+		debug "Written to file $mpx_fn";
+}
+
 
 sub _unwrap {
 	my $dom = shift or die "Need response";
-
 	my $unwrapFN = realpath(
 		File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
 	if ( !-f $unwrapFN ) {

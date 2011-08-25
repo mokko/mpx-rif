@@ -11,21 +11,14 @@ use File::Copy;
 use YAML::Syck;
 use FindBin;
 use File::Spec;
+use Pod::Usage;
 use Image::Magick;
 
 use Getopt::Std;
-getopts( 'c:d', my $opts = {} );
+getopts( 'c:dh', my $opts = {} );
+pod2usage(-verbose => 2) if ( $opts->{h} );
 
 sub debug;
-
-#my $config = {
-#logfile: path where log is to be stored (inside tempdir)
-#	logfile => 'MIMO-resmvr.log',
-#path where big mpx file lies
-#mpx => '/home/Mengel/projects/Salsa_OAI2/data/source/MIMO-May-Export.mpx',
-#path where images and log will be stored
-#	tempdir => '/home/Mengel/temp',
-#};
 
 =head1 SYNOPSIS
 
@@ -70,6 +63,10 @@ check if there are dublicate multimediaobjekte.
 Should I also check which multimediaobjekt has no verknüpftesObjekt?
 Maybe there are multimediaobjekte which are not meant for MIMO? Maybe in a
 separate script.
+
+NEW TODO
+I could build an onRecord harvester into this little script, so it doesn't need
+a current harvest.
 
 =cut
 
@@ -119,7 +116,7 @@ debug 'found ' . scalar @nodes . " nodes";
 #);
 
 foreach my $node (@nodes) {
-	my $node  = registerNS($node);
+	my $node = registerNS($node);
 
 	my @arr   = $node->findnodes('@mulId');
 	my $mulId = $arr[0]->string_value();
@@ -128,18 +125,16 @@ foreach my $node (@nodes) {
 		die "Error: no mulId";
 	}
 
-	my ($win, $erweiterung) = getPath($node);
-	if (!$win) {
+	my ( $win, $erweiterung ) = getPath($node);
+	if ( !$win ) {
 		my $msg = "Path not complete for mulId $mulId";
 		debug $msg;
 		log->warning($msg);
-		next; #untested
+		next;    #untested
 
 	}
 
-	#convert to nix for cygwin
-	#my $path = cygpath($win);
-	my $path = win2cyg($win);
+	my $path = win2cyg($win); 	#convert to nix for cygwin
 
 	#new filename
 	my $new = $config->{tempdir} . '/' . $mulId . '.' . lc($erweiterung);
@@ -149,15 +144,14 @@ foreach my $node (@nodes) {
 	if ( !-f "$path" ) {
 		$log->warning("Resource not found:$path");
 	} else {
-		debug 'er'.lc($erweiterung);
-		if (lc($erweiterung) eq 'jpg') {
-			resizeJpg ($path,$new);
+		debug 'er' . lc($erweiterung);
+		if ( lc($erweiterung) eq 'jpg' ) {
+			resizeJpg( $path, $new );
 		} else {
 			copy( $path, $new );
 		}
 	}
 }
-
 
 #
 # SUBs
@@ -174,32 +168,33 @@ I assume I already tested if $old exists and get here only if it does.
 =cut
 
 sub resizeJpg {
-	my $old=shift;
-	my $new=shift;
+	my $old = shift;
+	my $new = shift;
 
 	#debug "Enter resizeJpg";
 
-	if (!$old) {
+	if ( !$old ) {
 		die "resizeJpg: no file name old!";
 	}
 
-	if (!$new) {
+	if ( !$new ) {
 		die "resizeJpg: no file name new!";
 	}
 
-	my $p=new Image::Magick;
-	my ($width, $height, $size, $format) = $p->Ping($old);
+	my $p = new Image::Magick;
+	my ( $width, $height, $size, $format ) = $p->Ping($old);
 
-	if ($width > 800 or $height > 800) {
+	if ( $width > 800 or $height > 800 ) {
 		debug "downsize image";
-		$p->Read ($old);
+		$p->Read($old);
 		$log->warning("Downsize $old");
-		$p->AdaptiveResize(geometry=>'800x800');
-		$p->Write ($new);
+		$p->AdaptiveResize( geometry => '800x800' );
+		$p->Write($new);
 	} else {
-		if ($width < 800 && $height < 800) {
+		if ( $width < 800 && $height < 800 ) {
 			$log->warning("image $old is smaller than 800 px");
 		}
+
 		#if size ok just cp to new location
 		copy( $old, $new );
 	}
@@ -244,6 +239,7 @@ sub getPath {
 		#path is fullpath as specified in MuseumPlus
 		#I currently assume that it is always as windows path
 		my $path = $pfad . '\\' . $datei . '.' . $erweiterung;
+
 		#debug "getPATH: $path;";
 		return $path, $erweiterung;
 	}
@@ -335,6 +331,7 @@ the conf file directory from that location.
 Only subvalues of 'resourceMover' are returned.
 
 =cut
+
 sub loadConfig {
 	my $optc = shift;
 
@@ -366,14 +363,13 @@ sub loadConfig {
 		print "Error: Configuration loaded, but no resourceMover info!\n";
 		exit 1;
 	}
-
 	return $config->{resourceMover};
 	debug $config->{tempdir};
-
 }
 
 =func my $xpc=registerNS ($doc);
 =cut
+
 sub registerNS {
 	my $doc = shift;
 	my $xpc = XML::LibXML::XPathContext->new($doc);
@@ -410,6 +406,7 @@ very simple re-implementation of cygpath.
 
 sub win2cyg {
 	my $win = shift;
+
 	#debug "WIN: '$win'";
 
 	my $drive;
@@ -425,6 +422,7 @@ sub win2cyg {
 	my $path = ( split /:\\/, $win )[-1];
 	$path =~ tr,\\,/,;
 	my $cyg = "/cygdrive/$drive/$path";
+
 	#debug "CYG: $cyg!";
 	return $cyg;
 

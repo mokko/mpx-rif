@@ -14,3 +14,4 @@ mpx-rif.log
 *.log
 MPX-RIF-*
 .build/*
+*.zip

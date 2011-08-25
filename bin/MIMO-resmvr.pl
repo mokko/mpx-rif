@@ -15,8 +15,8 @@ use Pod::Usage;
 use Image::Magick;
 
 use Getopt::Std;
-getopts( 'c:dh', my $opts = {} );
-pod2usage(-verbose => 2) if ( $opts->{h} );
+getopts( 'c:dhpv', my $opts = {} );
+pod2usage( -verbose => 2 ) if ( $opts->{h} );
 
 sub debug;
 
@@ -74,10 +74,18 @@ a current harvest.
 # command line sanity
 #
 
+if ( $opts->{v} ) {
+	$opts->{d} = 1;
+}
+
 if ( !$opts->{d} ) {
 	$opts->{d} = 0;
 }
 debug "Debug mode on";
+
+if ($opts->{p}) {
+	debug "Planning mode on. No file will actually be moved!";
+}
 
 #-c or default: conf/$USER.yml
 my $config = loadConfig( $opts->{c} );
@@ -95,26 +103,21 @@ if ( !-f $ARGV[0] ) {
 # INIT LOG
 my $log = init_log();
 
-# INIT MPX
-my $xpc   = init_mpx( $ARGV[0] );
-my $xpath = '/mpx:museumPlusExport/mpx:multimediaobjekt'
-  . '[mpx:verknüpftesObjekt and mpx:multimediaPfadangabe]';
-
 #
 # MAIN
 #
 
-# LOOP THRU multimediaobjekte
+# INIT MPX from file (either mume.mpx or lastharvest)
+my $xpc   = init_mpx( $ARGV[0] );
+my $xpath = '/mpx:museumPlusExport/mpx:multimediaobjekt'
+  . '[mpx:verknüpftesObjekt and mpx:multimediaPfadangabe]';
+
 my @nodes = $xpc->findnodes($xpath);
 
 debug "xpath: $xpath";
 debug 'found ' . scalar @nodes . " nodes";
 
-#my @nodes = $doc->findnodes(
-#	    'mpx:museumPlusExport/mpx:multimediaobjekt'
-#	  . '[@freigabe = \'web\']'
-#);
-
+# LOOP THRU multimediaobjekte in file
 foreach my $node (@nodes) {
 	my $node = registerNS($node);
 
@@ -125,18 +128,20 @@ foreach my $node (@nodes) {
 		die "Error: no mulId";
 	}
 
-	my ( $win, $erweiterung ) = getPath($node);
-	if ( !$win ) {
+	#act on the file path that is saved in resource description
+	#multimediaDateiname, multimediaErweiterung etc.
+	my ( $win_path, $erweiterung ) = getPath($node);
+	if ( !$win_path ) {
 		my $msg = "Path not complete for mulId $mulId";
 		debug $msg;
 		log->warning($msg);
 		next;    #untested
-
 	}
 
-	my $path = win2cyg($win); 	#convert to nix for cygwin
+	#to move the file from cygwin we need cyg path
+	my $path = win2cyg($win_path);    #convert to nix for cygwin
 
-	#new filename
+	#new filename: $tempdir/$mulId.jpg
 	my $new = $config->{tempdir} . '/' . $mulId . '.' . lc($erweiterung);
 	debug "$path --> $new";
 
@@ -144,11 +149,14 @@ foreach my $node (@nodes) {
 	if ( !-f "$path" ) {
 		$log->warning("Resource not found:$path");
 	} else {
-		debug 'er' . lc($erweiterung);
+
+		#debug 'er' . lc($erweiterung);
 		if ( lc($erweiterung) eq 'jpg' ) {
 			resizeJpg( $path, $new );
 		} else {
-			copy( $path, $new );
+			if ( !$opts->{p} ) {
+				copy( $path, $new );
+			}
 		}
 	}
 }
@@ -204,6 +212,10 @@ sub resizeJpg {
 
 	returns full paths as saved in MPX, typically
 	M:\\bla\bli\blu\file.jpg
+
+	returns it in two parts
+	M:\\bla\bli\blu\file
+	and jpg
 
 =cut
 
@@ -338,7 +350,7 @@ sub loadConfig {
 	#default:conf/$user.yml
 	if ( !$ENV{USER} ) {
 		$ENV{USER} = 'USER';
-		debug "Environment variable 'USER' not defined. Assume USER";
+		debug "Environment variable 'USER' not defined. Asume USER";
 	}
 
 	#default
@@ -353,7 +365,7 @@ sub loadConfig {
 	debug "Trying to load $file";
 
 	if ( !-e $file ) {
-		print "Error: Configuration file does not exist!\n";
+		print "Error: Configuration file does not exist ($file)!\n";
 		exit 1;
 	}
 

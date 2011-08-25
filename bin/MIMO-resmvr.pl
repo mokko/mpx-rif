@@ -128,6 +128,8 @@ foreach my $node (@nodes) {
 		die "Error: no mulId";
 	}
 
+
+
 	#act on the file path that is saved in resource description
 	#multimediaDateiname, multimediaErweiterung etc.
 	my ( $win_path, $erweiterung ) = getPath($node);

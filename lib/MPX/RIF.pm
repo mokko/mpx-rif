@@ -580,6 +580,7 @@ sub writeXML {
 			my %attributes = (
 				'exportdatum' => $now,
 				'mulId'       => $mulId,
+				'quelle' =>'mpx-rif',
 			);
 
 			#my $pref=$resource->get('pref');

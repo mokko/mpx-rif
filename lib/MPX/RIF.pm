@@ -251,18 +251,13 @@ sub _lookupObjId {
 	#tisch von M+ erzeugt werden und mit 'Ident. Unternummer' qualifiziert
 	#werden
 
-	my $xpath = q(mpx:museumPlusExport/mpx:sammlungsobjekt);
-	$xpath .= qq([mpx:identNr[
-		not(mpx:identNr/\@art) or mpx:identNr/\@art != 'Ident. Unternummer']
-		= '$identNr']);
-	#$xpath.=q([not(mpx:identNr/@art) or mpx:identNr/@art != 'Ident. Unternummer']);
-	#weeds out identNr without @art
-	#$xpath.=q([mpx:identNr/@art != 'Ident. Unternummer']);
-	#weeds out with identNr@art ='Ident Unternummer'
-	#it may or may not have mpx:identNr/@art
-	#if it does ignore those with @art='Ident. Unternummer'
-	#$xpath.=q([not(mpx:identNr/@art) or mpx:identNr/@art[ not('Ident. Unternummer')]]);
-
+	my $xpath = q(
+		mpx:museumPlusExport/mpx:sammlungsobjekt[
+			mpx:identNr[
+				@art != 'Ident. Unternummer' or not (@art)
+			]
+	);
+	$xpath .= qq(= '$identNr']);
 	$xpath .= q(/@objId);
 
 	#debug "   xpath:\n   ".$xpath;
@@ -286,10 +281,14 @@ sub _lookupObjId {
 		log $msg;
 
 		debug '  ' . $msg . "\n";
+		debug "   xpath:\n   " . $xpath;
+		debug '   # nodes found: ' . scalar @nodes;
+		foreach (@nodes) {
+			debug "\tobjid:".$_->string_value();
+		}
 		return;
 	}
 
-	#debug '   # nodes found: ' . scalar @nodes;
 	my $objId = $nodes[0]->string_value();
 
 	#debug "\tIDENTIFIED $identNr-> objId $objId\n";
@@ -404,7 +403,7 @@ sub run {
 	if ( $self->{BEGIN} == 6
 		or ( !$self->{BEGIN} ) )
 	{
-		$self->validate;
+		#$self->validate;
 	}
 
 	debug "done\n";

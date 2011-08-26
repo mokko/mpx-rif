@@ -1,4 +1,7 @@
 Revision history for MPX-RIF
+0.015- 2011-08-26
+        mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
+        This time it was that Unternummern were not excluded.
 0.014- 2011-08-26
         mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
 0.013- 2011-08-26

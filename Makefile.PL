@@ -24,7 +24,8 @@ my %WriteMakefileArgs = (
     'bin/MIMO-resmvr.pl',
     'bin/mpx-rif.pl',
     'bin/newmulId.pl',
-    'bin/rename-images.pl'
+    'bin/rename-images.pl',
+    'bin/testXpath.pl'
   ],
   'LICENSE' => 'perl',
   'NAME' => 'MPX::RIF',
@@ -54,7 +55,7 @@ my %WriteMakefileArgs = (
     'YAML::XS' => '0',
     'utf8' => '0'
   },
-  'VERSION' => '0.014',
+  'VERSION' => '0.015',
   'test' => {
     'TESTS' => 't/*.t'
   }

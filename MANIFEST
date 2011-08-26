@@ -9,6 +9,7 @@ bin/MIMO-resmvr.pl
 bin/mpx-rif.pl
 bin/newmulId.pl
 bin/rename-images.pl
+bin/testXpath.pl
 lib/MPX/RIF.pm
 lib/MPX/RIF/Helper.pm
 lib/MPX/RIF/MIMO.pm

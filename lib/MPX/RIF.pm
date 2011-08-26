@@ -1,6 +1,6 @@
 package MPX::RIF;
 BEGIN {
-  $MPX::RIF::VERSION = '0.011';
+  $MPX::RIF::VERSION = '0.012';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
@@ -450,6 +450,7 @@ sub writeXML {
 			my %attributes = (
 				'exportdatum' => $now,
 				'mulId'       => $mulId,
+				'quelle' =>'mpx-rif',
 			);
 
 			#my $pref=$resource->get('pref');
@@ -896,7 +897,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.011
+version 0.012
 
 =head1 SYNOPSIS
 

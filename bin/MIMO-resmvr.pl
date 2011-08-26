@@ -11,31 +11,32 @@ use File::Copy;
 use YAML::Syck;
 use FindBin;
 use File::Spec;
+use Pod::Usage;
 use Image::Magick;
 
 use Getopt::Std;
-getopts( 'c:d', my $opts = {} );
+getopts( 'c:dhpv', my $opts = {} );
+pod2usage( -verbose => 2 ) if ( $opts->{h} );
 
 sub debug;
-
-#my $config = {
-#logfile: path where log is to be stored (inside tempdir)
-#	logfile => 'MIMO-resmvr.log',
-#path where big mpx file lies
-#mpx => '/home/Mengel/projects/Salsa_OAI2/data/source/MIMO-May-Export.mpx',
-#path where images and log will be stored
-#	tempdir => '/home/Mengel/temp',
-#};
 
 
 #
 # command line sanity
 #
 
+if ( $opts->{v} ) {
+	$opts->{d} = 1;
+}
+
 if ( !$opts->{d} ) {
 	$opts->{d} = 0;
 }
 debug "Debug mode on";
+
+if ($opts->{p}) {
+	debug "Planning mode on. No file will actually be moved!";
+}
 
 #-c or default: conf/$USER.yml
 my $config = loadConfig( $opts->{c} );
@@ -53,28 +54,23 @@ if ( !-f $ARGV[0] ) {
 # INIT LOG
 my $log = init_log();
 
-# INIT MPX
-my $xpc   = init_mpx( $ARGV[0] );
-my $xpath = '/mpx:museumPlusExport/mpx:multimediaobjekt'
-  . '[mpx:verknüpftesObjekt and mpx:multimediaPfadangabe]';
-
 #
 # MAIN
 #
 
-# LOOP THRU multimediaobjekte
+# INIT MPX from file (either mume.mpx or lastharvest)
+my $xpc   = init_mpx( $ARGV[0] );
+my $xpath = '/mpx:museumPlusExport/mpx:multimediaobjekt'
+  . '[mpx:verknüpftesObjekt and mpx:multimediaPfadangabe]';
+
 my @nodes = $xpc->findnodes($xpath);
 
 debug "xpath: $xpath";
 debug 'found ' . scalar @nodes . " nodes";
 
-#my @nodes = $doc->findnodes(
-#	    'mpx:museumPlusExport/mpx:multimediaobjekt'
-#	  . '[@freigabe = \'web\']'
-#);
-
+# LOOP THRU multimediaobjekte in file
 foreach my $node (@nodes) {
-	my $node  = registerNS($node);
+	my $node = registerNS($node);
 
 	my @arr   = $node->findnodes('@mulId');
 	my $mulId = $arr[0]->string_value();
@@ -83,20 +79,28 @@ foreach my $node (@nodes) {
 		die "Error: no mulId";
 	}
 
-	my ($win, $erweiterung) = getPath($node);
-	if (!$win) {
+	#move only those with @freigabe =~ /Web|web/
+	my $freigabe=$node->findvalue ('@freigabe');
+	if (! ($freigabe && lc($freigabe) eq 'web') ) {
+		debug "no freigabe";
+		next;
+	}
+	#debug "freigabe $freigabe";
+
+	#act on the file path that is saved in resource description
+	#multimediaDateiname, multimediaErweiterung etc.
+	my ( $win_path, $erweiterung ) = getPath($node);
+	if ( !$win_path ) {
 		my $msg = "Path not complete for mulId $mulId";
 		debug $msg;
 		log->warning($msg);
-		next; #untested
-
+		next;
 	}
 
-	#convert to nix for cygwin
-	#my $path = cygpath($win);
-	my $path = win2cyg($win);
+	#to move the file from cygwin we need cyg path
+	my $path = win2cyg($win_path);    #convert to nix for cygwin
 
-	#new filename
+	#new filename: $tempdir/$mulId.jpg
 	my $new = $config->{tempdir} . '/' . $mulId . '.' . lc($erweiterung);
 	debug "$path --> $new";
 
@@ -104,15 +108,17 @@ foreach my $node (@nodes) {
 	if ( !-f "$path" ) {
 		$log->warning("Resource not found:$path");
 	} else {
-		debug 'er'.lc($erweiterung);
-		if (lc($erweiterung) eq 'jpg') {
-			resizeJpg ($path,$new);
+
+		#debug 'er' . lc($erweiterung);
+		if ( lc($erweiterung) eq 'jpg' ) {
+			resizeJpg( $path, $new );
 		} else {
-			copy( $path, $new );
+			if ( !$opts->{p} ) {
+				copy( $path, $new );
+			}
 		}
 	}
 }
-
 
 #
 # SUBs
@@ -120,32 +126,33 @@ foreach my $node (@nodes) {
 
 
 sub resizeJpg {
-	my $old=shift;
-	my $new=shift;
+	my $old = shift;
+	my $new = shift;
 
 	#debug "Enter resizeJpg";
 
-	if (!$old) {
+	if ( !$old ) {
 		die "resizeJpg: no file name old!";
 	}
 
-	if (!$new) {
+	if ( !$new ) {
 		die "resizeJpg: no file name new!";
 	}
 
-	my $p=new Image::Magick;
-	my ($width, $height, $size, $format) = $p->Ping($old);
+	my $p = new Image::Magick;
+	my ( $width, $height, $size, $format ) = $p->Ping($old);
 
-	if ($width > 800 or $height > 800) {
+	if ( $width > 800 or $height > 800 ) {
 		debug "downsize image";
-		$p->Read ($old);
+		$p->Read($old);
 		$log->warning("Downsize $old");
-		$p->AdaptiveResize(geometry=>'800x800');
-		$p->Write ($new);
+		$p->AdaptiveResize( geometry => '800x800' );
+		$p->Write($new);
 	} else {
-		if ($width < 800 && $height < 800) {
+		if ( $width < 800 && $height < 800 ) {
 			$log->warning("image $old is smaller than 800 px");
 		}
+
 		#if size ok just cp to new location
 		copy( $old, $new );
 	}
@@ -184,6 +191,7 @@ sub getPath {
 		#path is fullpath as specified in MuseumPlus
 		#I currently assume that it is always as windows path
 		my $path = $pfad . '\\' . $datei . '.' . $erweiterung;
+
 		#debug "getPATH: $path;";
 		return $path, $erweiterung;
 	}
@@ -247,13 +255,14 @@ sub init_mpx {
 	return $xpc;
 }
 
+
 sub loadConfig {
 	my $optc = shift;
 
 	#default:conf/$user.yml
 	if ( !$ENV{USER} ) {
 		$ENV{USER} = 'USER';
-		debug "Environment variable 'USER' not defined. Assume USER";
+		debug "Environment variable 'USER' not defined. Asume USER";
 	}
 
 	#default
@@ -268,7 +277,7 @@ sub loadConfig {
 	debug "Trying to load $file";
 
 	if ( !-e $file ) {
-		print "Error: Configuration file does not exist!\n";
+		print "Error: Configuration file does not exist ($file)!\n";
 		exit 1;
 	}
 
@@ -278,11 +287,10 @@ sub loadConfig {
 		print "Error: Configuration loaded, but no resourceMover info!\n";
 		exit 1;
 	}
-
 	return $config->{resourceMover};
 	debug $config->{tempdir};
-
 }
+
 
 sub registerNS {
 	my $doc = shift;
@@ -309,6 +317,7 @@ sub cygpath {
 
 sub win2cyg {
 	my $win = shift;
+
 	#debug "WIN: '$win'";
 
 	my $drive;
@@ -324,10 +333,12 @@ sub win2cyg {
 	my $path = ( split /:\\/, $win )[-1];
 	$path =~ tr,\\,/,;
 	my $cyg = "/cygdrive/$drive/$path";
+
 	#debug "CYG: $cyg!";
 	return $cyg;
 
 }
+
 __END__
 =pod
 
@@ -337,7 +348,7 @@ MIMO-resmvr.pl - resource mover for MIMO
 
 =head1 VERSION
 
-version 0.011
+version 0.012
 
 =head1 SYNOPSIS
 
@@ -376,6 +387,10 @@ I assume I already tested if $old exists and get here only if it does.
 
 	returns full paths as saved in MPX, typically
 	M:\\bla\bli\blu\file.jpg
+
+	returns it in two parts
+	M:\\bla\bli\blu\file
+	and jpg
 
 =head2 debug 'message';
 
@@ -422,6 +437,10 @@ check if there are dublicate multimediaobjekte.
 Should I also check which multimediaobjekt has no verknüpftesObjekt?
 Maybe there are multimediaobjekte which are not meant for MIMO? Maybe in a
 separate script.
+
+NEW TODO
+I could build an onRecord harvester into this little script, so it doesn't need
+a current harvest.
 
 =head2 my $nix=cygpath ($win);
 

@@ -251,21 +251,30 @@ sub _lookupObjId {
 	#tisch von M+ erzeugt werden und mit 'Ident. Unternummer' qualifiziert
 	#werden
 
-	my $xpath=q(mpx:museumPlusExport/mpx:sammlungsobjekt);
-	$xpath.=qq([mpx:identNr = '$identNr']);
-	#apparently weeds out identNr without @art
+	my $xpath = q(mpx:museumPlusExport/mpx:sammlungsobjekt);
+	$xpath .= qq([mpx:identNr[
+		not(mpx:identNr/\@art) or mpx:identNr/\@art != 'Ident. Unternummer']
+		= '$identNr']);
+	#$xpath.=q([not(mpx:identNr/@art) or mpx:identNr/@art != 'Ident. Unternummer']);
+	#weeds out identNr without @art
 	#$xpath.=q([mpx:identNr/@art != 'Ident. Unternummer']);
-	$xpath.=q([not(mpx:identNr/@art) or mpx:identNr/@art != 'Ident. Unternummer']);
-	$xpath.=q(/@objId);
+	#weeds out with identNr@art ='Ident Unternummer'
+	#it may or may not have mpx:identNr/@art
+	#if it does ignore those with @art='Ident. Unternummer'
+	#$xpath.=q([not(mpx:identNr/@art) or mpx:identNr/@art[ not('Ident. Unternummer')]]);
+
+	$xpath .= q(/@objId);
+
 	#debug "   xpath:\n   ".$xpath;
 
-	my @nodes =	$doc->findnodes( $xpath );
+	my @nodes = $doc->findnodes($xpath);
 
 	#return empty handed if no objId found
 	if ( !@nodes ) {
-		my $msg = "'$identNr' not found, objId missing";
+		my $msg = "'$identNr' NOT FOUND, objId missing";
 
-		debug '   '.$msg."\n";
+		debug '   ' . $msg . "\n";
+		debug "   xpath:\n   " . $xpath;
 		log $msg;
 
 		#debug "xpath returns zero nodes";
@@ -273,16 +282,17 @@ sub _lookupObjId {
 	}
 
 	if ( scalar @nodes > 1 ) {
-		my $msg = "IdentNr $identNr not unique in mpx " . $self->{lookup};
+		my $msg = "IdentNr $identNr NOT UNIQUE in mpx " . $self->{lookup};
 		log $msg;
 
-		debug '  '.$msg."\n";
+		debug '  ' . $msg . "\n";
 		return;
 	}
 
-	debug '   # nodes found: ' . scalar @nodes;
+	#debug '   # nodes found: ' . scalar @nodes;
 	my $objId = $nodes[0]->string_value();
-	debug "\tIDENTIFIED $identNr-> objId $objId\n";
+
+	#debug "\tIDENTIFIED $identNr-> objId $objId\n";
 
 	return $objId;
 }
@@ -586,7 +596,7 @@ sub writeXML {
 			my %attributes = (
 				'exportdatum' => $now,
 				'mulId'       => $mulId,
-				'quelle' =>'mpx-rif',
+				'quelle'      => 'mpx-rif',
 			);
 
 			#my $pref=$resource->get('pref');
@@ -1047,23 +1057,23 @@ sub _harvest {
 	}
 
 	if ( !$response->is_error ) {
+
 		#scalar ref so we can avoid having two of them in memory
-		_unwrapAndWrite ($mpx_fn, \$response);
+		_unwrapAndWrite( $mpx_fn, \$response );
 	}
 
 }
 
 sub _unwrapAndWrite {
-		my $mpx_fn=shift or die "Error!";
-		my $big=shift or die "Error!"; # scalar ref to response
-		debug "Start unwrapping...";
-		${$big} = _unwrap(${$big}->toDOM);
-		debug "About to write harvest to $mpx_fn";
-		${$big}->toFile($mpx_fn,0);
-		undef ${$big};
-		debug "Written to file $mpx_fn";
+	my $mpx_fn = shift or die "Error!";
+	my $big    = shift or die "Error!";    # scalar ref to response
+	debug "Start unwrapping...";
+	${$big} = _unwrap( ${$big}->toDOM );
+	debug "About to write harvest to $mpx_fn";
+	${$big}->toFile( $mpx_fn, 0 );
+	undef ${$big};
+	debug "Written to file $mpx_fn";
 }
-
 
 sub _unwrap {
 	my $dom = shift or die "Need response";
@@ -1082,7 +1092,7 @@ sub _unwrap {
 	my $stylesheet = $xslt->parse_stylesheet($style_doc);
 
 	#now dom
-	return $stylesheet->transform( $dom );
+	return $stylesheet->transform($dom);
 }
 
 1;    # End of MPX::RIF

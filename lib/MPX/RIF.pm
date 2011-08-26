@@ -1,6 +1,6 @@
 package MPX::RIF;
 BEGIN {
-  $MPX::RIF::VERSION = '0.012';
+  $MPX::RIF::VERSION = '0.013';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
@@ -83,8 +83,8 @@ sub lookupObjId {
 		if ($identNr) {
 			my $objId = $self->_lookupObjId($identNr);
 
+			#debug "lookup $identNr";
 			#take out the identNr, not needed anymore!
-			debug "lookup $identNr";
 			delete $resource->{identNr};
 
 			if ($objId) {
@@ -153,23 +153,29 @@ sub _lookupObjId {
 		croak "Internal Error: _lookupObjId called without identNr";
 	}
 
-	#debug "Enter _lookupObjId (look for $identNr)";
+	debug "Enter _lookupObjId (look for $identNr)";
 
 	#Soll ist Lars Methode: Konvolut-DS soll in M+ sein sowie
 	#eigener DS für Unternummern. Damit wir nicht mehrere ObjIds für einen
 	#Obj bekommen, filtern wir die IdentNr heraus (Wiederholfeld), die automa
 	#tisch von M+ erzeugt werden und mit 'Ident. Unternummer' qualifiziert
 	#werden
-	my @nodes =
-	  $doc->findnodes( "mpx:museumPlusExport/mpx:sammlungsobjekt"
-		  . "[mpx:identNr = '$identNr'][mpx:identNr/\@art != 'Ident. Unternummer']/\@objId"
-	  );
+
+	my $xpath=q(mpx:museumPlusExport/mpx:sammlungsobjekt);
+	$xpath.=qq([mpx:identNr = '$identNr']);
+	#apparently weeds out identNr without @art
+	#$xpath.=q([mpx:identNr/@art != 'Ident. Unternummer']);
+	$xpath.=q([not(mpx:identNr/@art) or mpx:identNr/@art != 'Ident. Unternummer']);
+	$xpath.=q(/@objId);
+	#debug "   xpath:\n   ".$xpath;
+
+	my @nodes =	$doc->findnodes( $xpath );
 
 	#return empty handed if no objId found
 	if ( !@nodes ) {
 		my $msg = "'$identNr' not found, objId missing";
 
-		#debug $msg;
+		debug '   '.$msg."\n";
 		log $msg;
 
 		#debug "xpath returns zero nodes";
@@ -180,13 +186,13 @@ sub _lookupObjId {
 		my $msg = "IdentNr $identNr not unique in mpx " . $self->{lookup};
 		log $msg;
 
-		#debug $msg;
+		debug '  '.$msg."\n";
 		return;
 	}
 
-	#debug "nodes found" . scalar @nodes;
+	debug '   # nodes found: ' . scalar @nodes;
 	my $objId = $nodes[0]->string_value();
-	debug "\tIDENTIFIED $objId";
+	debug "\tIDENTIFIED $identNr-> objId $objId\n";
 
 	return $objId;
 }
@@ -897,7 +903,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.012
+version 0.013
 
 =head1 SYNOPSIS
 

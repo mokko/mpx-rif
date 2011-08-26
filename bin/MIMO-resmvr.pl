@@ -86,7 +86,6 @@ foreach my $node (@nodes) {
 		next;
 	}
 	#debug "freigabe $freigabe";
-
 	#act on the file path that is saved in resource description
 	#multimediaDateiname, multimediaErweiterung etc.
 	my ( $win_path, $erweiterung ) = getPath($node);
@@ -348,7 +347,7 @@ MIMO-resmvr.pl - resource mover for MIMO
 
 =head1 VERSION
 
-version 0.012
+version 0.013
 
 =head1 SYNOPSIS
 

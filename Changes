@@ -1,4 +1,6 @@
 Revision history for MPX-RIF
+0.013- 2011-08-26
+        mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
 0.012- 2011-08-26
         MIMO-resmvr.pl - now checks @freigabe=/Web|web/'
 0.011- 2011-08-10

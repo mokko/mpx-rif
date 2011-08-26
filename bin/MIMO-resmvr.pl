@@ -135,7 +135,6 @@ foreach my $node (@nodes) {
 		next;
 	}
 	#debug "freigabe $freigabe";
-
 	#act on the file path that is saved in resource description
 	#multimediaDateiname, multimediaErweiterung etc.
 	my ( $win_path, $erweiterung ) = getPath($node);

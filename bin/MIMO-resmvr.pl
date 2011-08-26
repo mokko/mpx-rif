@@ -128,7 +128,13 @@ foreach my $node (@nodes) {
 		die "Error: no mulId";
 	}
 
-
+	#move only those with @freigabe =~ /Web|web/
+	my $freigabe=$node->findvalue ('@freigabe');
+	if (! ($freigabe && lc($freigabe) eq 'web') ) {
+		debug "no freigabe";
+		next;
+	}
+	#debug "freigabe $freigabe";
 
 	#act on the file path that is saved in resource description
 	#multimediaDateiname, multimediaErweiterung etc.
@@ -137,7 +143,7 @@ foreach my $node (@nodes) {
 		my $msg = "Path not complete for mulId $mulId";
 		debug $msg;
 		log->warning($msg);
-		next;    #untested
+		next;
 	}
 
 	#to move the file from cygwin we need cyg path

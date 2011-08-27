@@ -155,8 +155,7 @@ sub identNr {
 	     	(?:([A-Za-z]|Ca|nls|[A-Za-z]{1,2} nls)
 	       		[_|\s]||)
 #3rd element: Dlg (optional)
-			(?:
-	     	([A-Za-z]{1,2}|nls|[A-Za-z]{1,2} nls)
+	     	(?:(Dlg)
 	       		[_|\s]||)
 #4th element: 1234
 	       	(\d+)

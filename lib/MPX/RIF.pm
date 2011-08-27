@@ -268,8 +268,8 @@ sub _lookupObjId {
 	if ( !@nodes ) {
 		my $msg = "'$identNr' NOT FOUND, objId missing";
 
-		debug '   ' . $msg . "\n";
-		debug "   xpath:\n   " . $xpath;
+		debug '   ' . $msg;
+		#debug "   xpath:\n   " . $xpath;
 		log $msg;
 
 		#debug "xpath returns zero nodes";

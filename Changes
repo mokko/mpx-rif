@@ -1,4 +1,7 @@
 Revision history for MPX-RIF
+0.017- 2011-08-29
+	resmvr: refactoring, convert tif to jpg, introduce counter counting 
+	items copied and renamed	
 0.016- 2011-08-26
 	mpx-rif.pl - correct identNr Parser for Dlg
 0.015- 2011-08-26

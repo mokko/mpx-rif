@@ -2,6 +2,7 @@
 
 # PODNAME: MIMO-resmvr.pl
 # ABSTRACT: resource mover for MIMO
+# this one has a lot of bad code!
 
 use strict;
 use warnings;
@@ -15,6 +16,7 @@ use Pod::Usage;
 use Image::Magick;
 
 use Getopt::Std;
+our $counter = 0;
 getopts( 'c:dhpv', my $opts = {} );
 pod2usage( -verbose => 2 ) if ( $opts->{h} );
 
@@ -83,7 +85,7 @@ if ( !$opts->{d} ) {
 }
 debug "Debug mode on";
 
-if ($opts->{p}) {
+if ( $opts->{p} ) {
 	debug "Planning mode on. No file will actually be moved!";
 }
 
@@ -108,9 +110,12 @@ my $log = init_log();
 #
 
 # INIT MPX from file (either mume.mpx or lastharvest)
+# xpath includes conditions which have to fulfilled to be considered
 my $xpc   = init_mpx( $ARGV[0] );
-my $xpath = '/mpx:museumPlusExport/mpx:multimediaobjekt'
-  . '[mpx:verknüpftesObjekt and mpx:multimediaPfadangabe]';
+my $xpath = q(/mpx:museumPlusExport/mpx:multimediaobjekt[
+  mpx:verknüpftesObjekt and
+  mpx:multimediaPfadangabe and
+  @freigabe = 'web' or @freigabe = 'Web']);
 
 my @nodes = $xpc->findnodes($xpath);
 
@@ -119,8 +124,73 @@ debug 'found ' . scalar @nodes . " nodes";
 
 # LOOP THRU multimediaobjekte in file
 foreach my $node (@nodes) {
-	my $node = registerNS($node);
+	my $node  = registerNS($node);
+	my $mulId = getMulId($node);
 
+	#act on the file path that is saved in resource description
+	#multimediaDateiname, multimediaErweiterung etc.
+	my ( $cygPath, $origExt ) = getPath($node);
+	if ( !$cygPath ) {
+		die "cygPath not returned!";
+		next;
+	}
+
+	#to move need cygPath, also corrects ext if needed and warns if file
+	#not found
+	my $newCygPath = newPath( $cygPath, $origExt, $mulId );
+	my $todo = imageWork( $cygPath, $newCygPath, $origExt );
+
+	if ($todo) {
+
+		#debug " file will not change, will just renamed and copy";
+		#test if resource is found, log warning if not
+		if ( -f "$cygPath" ) {
+			$counter++;
+			if ( !$opts->{p} ) {
+				copy( $cygPath, $newCygPath );
+			}
+		} else {
+			$log->warning("Resource not found:$cygPath");
+		}
+	}
+}
+
+my $msg;
+if ( $opts->{p} ) {
+	$msg = "done. $counter files would have been copied/renamed\n";
+} else {
+	$msg = "done. $counter files copied/renamed\n";
+}
+print $msg;
+$log->warning($msg);
+exit;
+
+#
+# SUBs
+#
+
+sub newPath {
+	my $cygPath = shift or die "Error";
+	my $origExt = shift or die "Error";
+	my $mulId   = shift or die "Error";
+
+	#make new path, typically: $tempdir/$mulId.jpg
+	my $newExt = lc($origExt);
+
+	#TODO: extract this somehow
+	#FILE CONVERSIONS
+	#if orig is tif convert to jpg
+	if ( $newExt =~ /^tif$|^tiff$/ ) {
+		$newExt = 'jpg';
+	}
+
+	my $newPath = $config->{tempdir} . '/' . $mulId . '.' . $newExt;
+	debug "newPath: $cygPath --> $newPath";
+	return $newPath;
+}
+
+sub getMulId {
+	my $node  = shift or die "Error";
 	my @arr   = $node->findnodes('@mulId');
 	my $mulId = $arr[0]->string_value();
 
@@ -128,51 +198,10 @@ foreach my $node (@nodes) {
 		die "Error: no mulId";
 	}
 
-	#move only those with @freigabe =~ /Web|web/
-	my $freigabe=$node->findvalue ('@freigabe');
-	if (! ($freigabe && lc($freigabe) eq 'web') ) {
-		debug "no freigabe";
-		next;
-	}
-	#debug "freigabe $freigabe";
-	#act on the file path that is saved in resource description
-	#multimediaDateiname, multimediaErweiterung etc.
-	my ( $win_path, $erweiterung ) = getPath($node);
-	if ( !$win_path ) {
-		my $msg = "Path not complete for mulId $mulId";
-		debug $msg;
-		log->warning($msg);
-		next;
-	}
-
-	#to move the file from cygwin we need cyg path
-	my $path = win2cyg($win_path);    #convert to nix for cygwin
-
-	#new filename: $tempdir/$mulId.jpg
-	my $new = $config->{tempdir} . '/' . $mulId . '.' . lc($erweiterung);
-	debug "$path --> $new";
-
-	#test if resource is found, log warning if not
-	if ( !-f "$path" ) {
-		$log->warning("Resource not found:$path");
-	} else {
-
-		#debug 'er' . lc($erweiterung);
-		if ( lc($erweiterung) eq 'jpg' ) {
-			resizeJpg( $path, $new );
-		} else {
-			if ( !$opts->{p} ) {
-				copy( $path, $new );
-			}
-		}
-	}
+	return $mulId;
 }
 
-#
-# SUBs
-#
-
-=func resizeJpg ($old, $new);
+=func my $todo=imageWork ($old, $new);
 
 Expects two file paths: the current location and the new location. It will
 check if image is bigger 800 px in either width or length. The new version
@@ -182,57 +211,56 @@ I assume I already tested if $old exists and get here only if it does.
 
 =cut
 
-sub resizeJpg {
-	my $old = shift;
-	my $new = shift;
+sub imageWork {
+	my $old     = shift or die "Error";
+	my $new     = shift or die "Error";
+	my $origExt = shift or die "Error";
 
 	#debug "Enter resizeJpg";
-
-	if ( !$old ) {
-		die "resizeJpg: no file name old!";
-	}
-
-	if ( !$new ) {
-		die "resizeJpg: no file name new!";
-	}
-
 	my $p = new Image::Magick;
 	my ( $width, $height, $size, $format ) = $p->Ping($old);
 
-	if ( $width > 800 or $height > 800 ) {
+	if ( !$width ) {
+		return 1;    #if not a picture, so just move it
+		             #also if file not available
+	}
+
+	if (   $width > 800
+		or $height > 800
+		or $origExt =~ /^tif$|^tiff$/ )
+	{
 		debug "downsize image";
 		$p->Read($old);
-		$log->warning("Downsize $old");
+		$log->warning("transform $old");
 		$p->AdaptiveResize( geometry => '800x800' );
-		$p->Write($new);
+		$counter++;
+		if ( !$opts->{p} ) {
+			$p->Write($new);
+		}
+		return;    #on return empty do NOT move!
 	} else {
 		if ( $width < 800 && $height < 800 ) {
 			$log->warning("image $old is smaller than 800 px");
 		}
-
-		#if size ok just cp to new location
-		copy( $old, $new );
+		return 1;    #on return non-empty DO move!
 	}
 }
 
-=func my ($path, $erweiterung)=getPath($node);
+=func my ($cygPath, $ext)=getPath($node);
 
 	returns full paths as saved in MPX, typically
 	M:\\bla\bli\blu\file.jpg
 
-	returns it in two parts
-	M:\\bla\bli\blu\file
-	and jpg
+	as cygpath as
+	/cygdrive/M/bla/bli/blu/file.jpg
+
+	and the extention (jpg).
 
 =cut
 
 sub getPath {
-	my $node = shift;
+	my $node = shift or die "Error";
 	my @arr;
-
-	if ( !$node ) {
-		die "extractPathFromMume called without node";
-	}
 
 	my ( $pfad, $datei, $erweiterung );
 	@arr = $node->findnodes('mpx:multimediaPfadangabe');
@@ -260,8 +288,12 @@ sub getPath {
 		my $path = $pfad . '\\' . $datei . '.' . $erweiterung;
 
 		#debug "getPATH: $path;";
-		return $path, $erweiterung;
+		return win2cyg($path), $erweiterung;
 	}
+
+	my $msg = 'Path not complete for mulId ' . getMulId($node);
+	debug $msg;
+	log->warning($msg);
 
 	return;
 }
@@ -292,7 +324,7 @@ sub init_log {
 	}
 
 	if ( !-d $config->{tempdir} ) {
-		debug "mkdir $config->{tempdir}";
+		debug "tempdir does not exist, trying to mk $config->{tempdir}";
 		mkdir $config->{tempdir} or die "Cannot make tempdir!";
 	}
 
@@ -300,6 +332,12 @@ sub init_log {
 
 	#*nix path only
 	my $logfile = $config->{tempdir} . '/' . $config->{logfile};
+
+	if ( -f $logfile ) {
+
+		#debug "about to unlink logfile $file";
+		unlink $logfile or warn "cannot delete old file $!";
+	}
 
 	$log->add(
 		file => {

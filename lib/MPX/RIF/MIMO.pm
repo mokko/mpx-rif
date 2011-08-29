@@ -1,6 +1,6 @@
 package MPX::RIF::MIMO;
 BEGIN {
-  $MPX::RIF::MIMO::VERSION = '0.016';
+  $MPX::RIF::MIMO::VERSION = '0.017';
 }
 # ABSTRACT: MIMO specific logic
 use strict;
@@ -398,7 +398,7 @@ MPX::RIF::MIMO - MIMO specific logic
 
 =head1 VERSION
 
-version 0.016
+version 0.017
 
 =head1 DESCRIPTION
 

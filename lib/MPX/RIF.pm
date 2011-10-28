@@ -1,6 +1,6 @@
 package MPX::RIF;
 {
-  $MPX::RIF::VERSION = '0.018';
+  $MPX::RIF::VERSION = '0.019';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
@@ -208,12 +208,11 @@ sub _lookupObjId {
 			}
 		}
 		$objId = $newestObject->findvalue('@objId');
-		debug "\tIDENTIFIED AMBIGUOUS: $identNr-> objId $objId";
-		#my $msg = "IdentNr $identNr NOT UNIQUE in mpx " . $self->{lookup};
-		#log $msg;
+		my $msg= "\tIDENTIFIED AMBIGUOUS: $identNr-> objId $objId";
+		debug $msg;
+		log $msg;
 
 	}
-
 
 	return $objId;
 }
@@ -934,7 +933,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.018
+version 0.019
 
 =head1 SYNOPSIS
 

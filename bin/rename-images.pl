@@ -61,7 +61,7 @@ rename-images.pl - add priority (-A) to file names which have none
 
 =head1 VERSION
 
-version 0.018
+version 0.019
 
 =head1 SYNOPSIS
 

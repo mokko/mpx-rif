@@ -1,6 +1,6 @@
 package MPX::RIF::Resource;
 {
-  $MPX::RIF::Resource::VERSION = '0.018';
+  $MPX::RIF::Resource::VERSION = '0.019';
 }
 # ABSTRACT: deal with resources and features
 use MPX::RIF::Helper qw(debug log);
@@ -172,7 +172,7 @@ MPX::RIF::Resource - deal with resources and features
 
 =head1 VERSION
 
-version 0.018
+version 0.019
 
 =head1 SYNOPSIS
 

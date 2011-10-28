@@ -1,6 +1,6 @@
 package MPX::RIF::MIMO;
 {
-  $MPX::RIF::MIMO::VERSION = '0.018';
+  $MPX::RIF::MIMO::VERSION = '0.019';
 }
 
 # ABSTRACT: MIMO specific logic
@@ -150,38 +150,40 @@ sub identNr {
 
 	#we always need these parts
 	if ( !$1 ) {
-		return identErr( "required first element not found", $file, $path );
+		identErr( "required first element not found", $file, $path );
+		return;
 	}
 
 	#we always need these parts
 	if ( !$4 ) {
-		return identErr( "required fourth element not found 1:$1 2:$2 3:$3",
-			$file, $path );
+		identErr( "required 4th element not found", $file, $path );
+		return;
 	}
 
 	#test existence of 2nd element where it has to be
 	#all except $1='VI' need $2
 	if ( $1 ne 'VI' && ( !$2 ) ) {
-		return identErr(
-			"identNr parser: 2nd element does not exist where required: ",
+		identErr( "identNr parser: 2nd element does not exist where required: ",
 			$file, $path );
+		return;
 	}
 
 	#uppercase for 2
 	if ( ( $1 ne 'VII' ) and ( $1 ne 'VI' ) ) {
 		if ( $2 !~ /[A-Z]{1,2}/ ) {
-			return identErr(
+			identErr(
 				"unless VII or VI: only uppercase allowed for 2nd element: $2",
 				$file, $path
 			);
+			return;
 		}
 	}
 
 	#lowercase for 2
 	if ( $1 eq 'VII' ) {
 		if ( $2 !~ /[a-z]{1,2}/ ) {
-			return identErr( "VII: 2nd element is not lowercase:  $2", $file,
-				$path );
+			identErr( "VII: 2nd element is not lowercase:  $2", $file, $path );
+			return;
 		}
 	}
 
@@ -215,6 +217,7 @@ sub identNr {
 		$identNr .= ' <' . $6 . '>';
 	}
 	debug " +identNr: '$identNr'";
+
 	return $identNr;
 }
 
@@ -230,6 +233,7 @@ sub identErr {
 	  . "   $msg";
 	log $msg;
 	debug $msg;
+	return;
 }
 
 
@@ -417,7 +421,7 @@ MPX::RIF::MIMO - MIMO specific logic
 
 =head1 VERSION
 
-version 0.018
+version 0.019
 
 =head1 DESCRIPTION
 

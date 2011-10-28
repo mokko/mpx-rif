@@ -16,3 +16,4 @@ MPX-RIF-*
 .build/*
 *.zip
 *.txt
+data/*

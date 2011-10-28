@@ -4,7 +4,7 @@
       "Maurice Mengel <mauricemengel@gmail.com>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.200008, CPAN::Meta::Converter version 2.110930",
+   "generated_by" : "Dist::Zilla version 4.300002, CPAN::Meta::Converter version 2.112621",
    "license" : [
       "perl_5"
    ],
@@ -44,7 +44,9 @@
             "XML::Writer" : 0,
             "YAML::Syck" : 0,
             "YAML::XS" : 0,
-            "utf8" : 0
+            "strict" : 0,
+            "utf8" : 0,
+            "warnings" : 0
          }
       },
       "test" : {
@@ -67,6 +69,6 @@
          "web" : "https://github.com/mokko/mpx-rif"
       }
    },
-   "version" : "0.017"
+   "version" : "0.018"
 }
 

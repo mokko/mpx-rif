@@ -1,7 +1,8 @@
 package MPX::RIF::MIMO;
-BEGIN {
-  $MPX::RIF::MIMO::VERSION = '0.017';
+{
+  $MPX::RIF::MIMO::VERSION = '0.018';
 }
+
 # ABSTRACT: MIMO specific logic
 use strict;
 use warnings;
@@ -113,22 +114,23 @@ sub identNr {
 	my $file = shift;
 	my $path = shift;
 
+	#non-matching group: (?:regexp)
+
 	$file =~ /
 #1st element: VII
 			(I|II|III|IV|V|VI|VII)
 				[_|\s]
 #2nd element: c C Ca (optional)
-	     	(?:([A-Za-z]|Ca|nls|[A-Za-z]{1,2} nls)
+	     	(?:(Nls|nls|[A-Ga-g]{1,2})
 	       		[_|\s]||)
 #3rd element: Dlg (optional)
-	     	(?:(Dlg)
+	     	(?:(Dlg|Nls|nls)
 	       		[_|\s]||)
 #4th element: 1234
 	       	(\d+)
 				#sep. could also be dot, but has to be there
 	       		[_|\s|\.]
 #5th element: a
-			#non-matching group: (?:regexp)
 			(?:
 	        ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-z]{1,2})
 				#separator only if there is a 4th element
@@ -136,6 +138,8 @@ sub identNr {
 #6th element: <1>
 			(\d?)
 	       /xi;
+
+	#NEW: I assume that there are no NLS which are also DLG
 
 	#VALIDATION
 	#so far we have been a bit too permissive, now we need to test
@@ -145,27 +149,39 @@ sub identNr {
 	#2) zweiter Teil hat immer Grossbuchstaben außer bei VIIer und VIer
 
 	#we always need these parts
-	if ( !( $1 && $4 ) ) {
-		return identErr( 'not 1 and 4', $file, $path );
+	if ( !$1 ) {
+		return identErr( "required first element not found", $file, $path );
 	}
 
-	#test existence of 2 where it has to be
+	#we always need these parts
+	if ( !$4 ) {
+		return identErr( "required fourth element not found 1:$1 2:$2 3:$3",
+			$file, $path );
+	}
+
+	#test existence of 2nd element where it has to be
 	#all except $1='VI' need $2
 	if ( $1 ne 'VI' && ( !$2 ) ) {
-		return identErr( "identNr parser: 2 not where it should be: ", $file, $path );
+		return identErr(
+			"identNr parser: 2nd element does not exist where required: ",
+			$file, $path );
 	}
 
 	#uppercase for 2
 	if ( ( $1 ne 'VII' ) and ( $1 ne 'VI' ) ) {
 		if ( $2 !~ /[A-Z]{1,2}/ ) {
-			return identErr( "no uppercase for 2 $2", $file, $path );
+			return identErr(
+				"unless VII or VI: only uppercase allowed for 2nd element: $2",
+				$file, $path
+			);
 		}
 	}
 
 	#lowercase for 2
 	if ( $1 eq 'VII' ) {
 		if ( $2 !~ /[a-z]{1,2}/ ) {
-			return identErr( "no lowercase for 2 $2", $file, $path );
+			return identErr( "VII: 2nd element is not lowercase:  $2", $file,
+				$path );
 		}
 	}
 
@@ -210,7 +226,7 @@ sub identErr {
 
 	$msg =
 	    " +identNr: Cannot extract identNr from $file\n"
-	  . "   $path\n"
+	  . "   $path$file\n"
 	  . "   $msg";
 	log $msg;
 	debug $msg;
@@ -234,11 +250,11 @@ sub urheber {
 	}
 
 	#wenn noch kein Urheber ermittelt, gib anonym an
-	if ($urheber =~/farbig|s_w|MIMO-JPGS_Ready-To-Go/) {
-		#debug "AUSOOOOOOOOOOORTIEREN $urheber";
-		$urheber= "anonym";
-	}
+	if ( $urheber =~ /farbig|s_w|MIMO-JPGS_Ready-To-Go/ ) {
 
+		#debug "AUSOOOOOOOOOOORTIEREN $urheber";
+		$urheber = "anonym";
+	}
 
 	$urheber =~ s!_! !g;
 
@@ -260,20 +276,20 @@ sub farbe {
 	}
 
 	#wenn noch kein Urheber ermittelt, gib anonym an
-	if ($farbe !~ /farbig|s_w/) {
+	if ( $farbe !~ /farbig|s_w/ ) {
 		$farbe = $dirs[-2];
-		   if ($farbe !~ /farbig|s_w/) {
+		if ( $farbe !~ /farbig|s_w/ ) {
 			return;
-		   }
+		}
 	}
 
 	$farbe =~ s/_/ /g;
-
 
 	debug " +farbe: $farbe";
 	return $farbe;
 
 }
+
 
 sub pref {
 	my $file = shift;
@@ -318,7 +334,8 @@ sub cygpath {
 		$win_path =~ s/\s+$//;
 		return $win_path;
 
-	} else {
+	}
+	else {
 
 		#catches error which breaks execution
 		warn "Warning: cygpath called without param";
@@ -341,10 +358,12 @@ sub cyg2win {
 	}
 }
 
+
 sub alpha2num {
 	my $in = shift || return;
 
-	$in=uc($in);
+	$in = uc($in);
+
 	#debug "ALPHA2NUM: $in";
 
 	my %tr = (
@@ -376,7 +395,7 @@ sub alpha2num {
 		Z => 26,
 	);
 
-	if ($in =~/\d/) {
+	if ( $in =~ /\d/ ) {
 		return $in;
 	}
 
@@ -398,7 +417,7 @@ MPX::RIF::MIMO - MIMO specific logic
 
 =head1 VERSION
 
-version 0.017
+version 0.018
 
 =head1 DESCRIPTION
 

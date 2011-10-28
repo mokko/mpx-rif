@@ -1,6 +1,6 @@
 package MPX::RIF;
-BEGIN {
-  $MPX::RIF::VERSION = '0.017';
+{
+  $MPX::RIF::VERSION = '0.018';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
@@ -153,7 +153,8 @@ sub _lookupObjId {
 		croak "Internal Error: _lookupObjId called without identNr";
 	}
 
-	debug "Enter _lookupObjId (look for $identNr)";
+	#debug "Enter _lookupObjId (look for $identNr)";
+	debug "_lookupObjId $identNr";
 
 	#Soll ist Lars Methode: Konvolut-DS soll in M+ sein sowie
 	#eigener DS für Unternummern. Damit wir nicht mehrere ObjIds für einen
@@ -168,7 +169,8 @@ sub _lookupObjId {
 			]
 	);
 	$xpath .= qq(= '$identNr']);
-	$xpath .= q(/@objId);
+
+	#$xpath .= q(/@objId);
 
 	#debug "   xpath:\n   ".$xpath;
 
@@ -179,6 +181,7 @@ sub _lookupObjId {
 		my $msg = "'$identNr' NOT FOUND, objId missing";
 
 		debug '   ' . $msg;
+
 		#debug "   xpath:\n   " . $xpath;
 		log $msg;
 
@@ -186,22 +189,31 @@ sub _lookupObjId {
 		return;
 	}
 
-	if ( scalar @nodes > 1 ) {
-		my $msg = "IdentNr $identNr NOT UNIQUE in mpx " . $self->{lookup};
-		log $msg;
-
-		debug '  ' . $msg . "\n";
-		debug "   xpath:\n   " . $xpath;
-		debug '   # nodes found: ' . scalar @nodes;
-		foreach (@nodes) {
-			debug "\tobjid:".$_->string_value();
-		}
-		return;
-	}
-
 	my $objId = $nodes[0]->string_value();
 
-	#debug "\tIDENTIFIED $identNr-> objId $objId\n";
+	#return the objId of newest export if NOT unique
+	if ( scalar @nodes > 1 ) {
+		my $newestObject;
+
+		#debug '  ' . $msg . "\n";
+		#debug "   xpath:\n   " . $xpath;
+		#debug '   # nodes found: ' . scalar @nodes;
+
+		#take node with newest (i.e. biggest) exportdatum
+
+		my $expdatum='';
+		foreach my $object (@nodes) {
+			if ( $object->findvalue('@exportdatum') gt $expdatum ) {
+				$newestObject = $object;
+			}
+		}
+		$objId = $newestObject->findvalue('@objId');
+		debug "\tIDENTIFIED AMBIGUOUS: $identNr-> objId $objId";
+		#my $msg = "IdentNr $identNr NOT UNIQUE in mpx " . $self->{lookup};
+		#log $msg;
+
+	}
+
 
 	return $objId;
 }
@@ -252,7 +264,8 @@ sub run {
 
 	if ( $self->{BEGIN} < 2 ) {
 		$self->parsedir;    #parse filepaths with external parser
-	} elsif ( $self->{BEGIN} == 2 ) {
+	}
+	elsif ( $self->{BEGIN} == 2 ) {
 		debug "BEGIN WITH SCANDIR YML";
 		$self->_loadStore( $temp->{2} );
 
@@ -265,7 +278,8 @@ sub run {
 		or ( !$self->{BEGIN} ) )
 	{
 		$self->lookupObjId;
-	} elsif ( $self->{BEGIN} == 3 ) {
+	}
+	elsif ( $self->{BEGIN} == 3 ) {
 		debug "BEGIN WITH LOOKUP YML";
 		$self->_loadStore( $temp->{3} ) or die "Cannot load yml";
 	}
@@ -296,6 +310,7 @@ sub run {
 	if ( $self->{BEGIN} == 6
 		or ( !$self->{BEGIN} ) )
 	{
+
 		#$self->validate;
 	}
 
@@ -349,7 +364,8 @@ sub validate {
 	#if no output then load from file
 	if ( $self->{output} ) {
 		$doc = XML::LibXML->new->parse_string( $self->{output} );
-	} else {
+	}
+	else {
 		debug "Load $temp->{5}";
 		$doc = XML::LibXML->new->parse_file( $temp->{5} );
 	}
@@ -363,7 +379,8 @@ sub validate {
 		my $msg = "mpx failed validation: $@";
 		log $msg;
 		debug $msg;
-	} else {
+	}
+	else {
 		debug "mpx validates\n";
 	}
 
@@ -384,7 +401,8 @@ sub validate {
 
 			#results contains multiple nodes
 			my $msg     = "mulId $mulId not unique!";
-			my @results = $xpc->findnodes(
+			my @results =
+			  $xpc->findnodes(
 				"/mpx:museumPlusExport/mpx:multimediaobjekt[\@mulId = $mulId]");
 			foreach (@results) {
 				$_ = registerNS($_);
@@ -563,14 +581,16 @@ sub _addCLI {
 			$self->{BEGIN} = 0;
 		}
 		debug "BEGIN mode on: " . $self->{BEGIN};
-	} else {
+	}
+	else {
 		$self->{BEGIN} = 0;
 	}
 
 	if ( $opts->{STOP} ) {
 		$self->{STOP} = $opts->{STOP};
 		debug "STOP mode on: " . $self->{STOP};
-	} else {
+	}
+	else {
 		$self->{STOP} = 0;
 	}
 
@@ -621,7 +641,8 @@ sub _config {
 
 	if ( !$self->{lookup} ) {
 		debug "Warning: Lookup mpx not specified in config";
-	} else {
+	}
+	else {
 
 		if ( !-f $self->{lookup} ) {
 			print "Warning: Lookup mpx file not found\n";
@@ -832,7 +853,7 @@ sub _getResource {
 }
 
 sub _harvest {
-	my $self = shift or return;
+	my $self   = shift or return;
 	my $mpx_fn = $self->{lookup};
 
 	if ( $self->{NOHARVEST} ) {
@@ -883,7 +904,8 @@ sub _unwrapAndWrite {
 
 sub _unwrap {
 	my $dom = shift or die "Need response";
-	my $unwrapFN = realpath(
+	my $unwrapFN =
+	  realpath(
 		File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
 	if ( !-f $unwrapFN ) {
 		die "$unwrapFN not cound. Check bin../xsl/unwrap.xsl";
@@ -912,7 +934,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.017
+version 0.018
 
 =head1 SYNOPSIS
 

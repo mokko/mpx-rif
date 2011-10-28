@@ -298,12 +298,11 @@ sub _lookupObjId {
 			}
 		}
 		$objId = $newestObject->findvalue('@objId');
-		debug "\tIDENTIFIED AMBIGUOUS: $identNr-> objId $objId";
-		#my $msg = "IdentNr $identNr NOT UNIQUE in mpx " . $self->{lookup};
-		#log $msg;
+		my $msg= "\tIDENTIFIED AMBIGUOUS: $identNr-> objId $objId";
+		debug $msg;
+		log $msg;
 
 	}
-
 
 	return $objId;
 }

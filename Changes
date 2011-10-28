@@ -1,4 +1,10 @@
 Revision history for MPX-RIF
+0.019- 2011-10-29
+        mpx-rif: IdentNr parser returned error value 1
+0.018- 2011-10-28
+        mpx-rif: IdentNr parser Nls problem. No merky, but works
+        mpx-rif: objId lookup: in case of ambiguous IdentNr, take lastest
+        export.
 0.017- 2011-08-29
 	resmvr: refactoring, convert tif to jpg, introduce counter counting 
 	items copied and renamed	

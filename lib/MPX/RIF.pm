@@ -1,6 +1,6 @@
 package MPX::RIF;
 {
-  $MPX::RIF::VERSION = '0.019';
+  $MPX::RIF::VERSION = '0.020';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
@@ -80,9 +80,8 @@ sub lookupObjId {
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
 		my $identNr  = $resource->get('identNr');
-		if ($identNr) {
+		if ($identNr) { 
 			my $objId = $self->_lookupObjId($identNr);
-
 			#debug "lookup $identNr";
 			#take out the identNr, not needed anymore!
 			delete $resource->{identNr};
@@ -153,8 +152,29 @@ sub _lookupObjId {
 		croak "Internal Error: _lookupObjId called without identNr";
 	}
 
+	#if (testWholeA ($identNr)) {
+	#	matchIdentNr ($identNr, exact) or
+	#	matchIdentNr ($identNr, parts)
+	#}
+
+	#if (testWholeB ($identNr)) {
+		#my @parts=wholeB2Parts(identNr);
+		#foreach (@parts ) {
+			#@matches=matchIdentNr ($_, exact); #only one	
+			#@matches=matchIdentNr ($_, parts); #can be multiple	
+		#}
+	#}
+	
+	#if whole in b-notation try for exactMatch for all parts
+	#if while in a notation call variant of exactMatch which ignores 3rd part
+	#match (identNr, exact);
+	#match (identNr, exactAndParts)
+	#testIdentNrWholeA
+	#testIdentNrWholeB
+	#there can be only one. If several return only latest export
+	#objId=exactMatch (IdentNr)
+
 	#debug "Enter _lookupObjId (look for $identNr)";
-	debug "_lookupObjId $identNr";
 
 	#Soll ist Lars Methode: Konvolut-DS soll in M+ sein sowie
 	#eigener DS für Unternummern. Damit wir nicht mehrere ObjIds für einen
@@ -162,16 +182,18 @@ sub _lookupObjId {
 	#tisch von M+ erzeugt werden und mit 'Ident. Unternummer' qualifiziert
 	#werden
 
+	#ohne Unternummer
+	#my $xpath = q(
+	#	mpx:museumPlusExport/mpx:sammlungsobjekt[mpx:identNr
+	#	[
+	#			@art != 'Ident. Unternummer' or not (@art)
+	#	]
+	#);
+	#mit Unternummer
 	my $xpath = q(
-		mpx:museumPlusExport/mpx:sammlungsobjekt[
-			mpx:identNr[
-				@art != 'Ident. Unternummer' or not (@art)
-			]
+		mpx:museumPlusExport/mpx:sammlungsobjekt[mpx:identNr
 	);
 	$xpath .= qq(= '$identNr']);
-
-	#$xpath .= q(/@objId);
-
 	#debug "   xpath:\n   ".$xpath;
 
 	my @nodes = $doc->findnodes($xpath);
@@ -189,7 +211,7 @@ sub _lookupObjId {
 		return;
 	}
 
-	my $objId = $nodes[0]->string_value();
+	my $objId = $nodes[0]->findvalue('@objId');
 
 	#return the objId of newest export if NOT unique
 	if ( scalar @nodes > 1 ) {
@@ -201,19 +223,20 @@ sub _lookupObjId {
 
 		#take node with newest (i.e. biggest) exportdatum
 
-		my $expdatum='';
+		my $expdatum = '';
 		foreach my $object (@nodes) {
 			if ( $object->findvalue('@exportdatum') gt $expdatum ) {
 				$newestObject = $object;
 			}
 		}
 		$objId = $newestObject->findvalue('@objId');
-		my $msg= "\tIDENTIFIED AMBIGUOUS: $identNr-> objId $objId";
+		my $msg = "   IDENTIFIED AMBIGUOUS: $identNr-> objId $objId";
 		debug $msg;
 		log $msg;
 
 	}
 
+	debug "lookupObjId $identNr->$objId";
 	return $objId;
 }
 
@@ -933,7 +956,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.019
+version 0.020
 
 =head1 SYNOPSIS
 

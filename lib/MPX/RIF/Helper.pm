@@ -1,6 +1,6 @@
 package MPX::RIF::Helper;
 {
-  $MPX::RIF::Helper::VERSION = '0.019';
+  $MPX::RIF::Helper::VERSION = '0.020';
 }
 
 # ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
@@ -11,8 +11,8 @@ use Log::Handler;
 @ISA       = qw(Exporter);
 @EXPORT_OK = qw(debug log);
 
-our $debug=0;
-our $log=init_log();    #will store the logger object
+our $debug = 0;
+our $log   = init_log();    #will store the logger object
 
 
 sub debug {
@@ -26,6 +26,7 @@ sub debug {
 sub log {
 	my $msg = shift;
 	if ($msg) {
+
 		#debug "$msg";
 		$log->warn($msg);
 	}
@@ -33,9 +34,8 @@ sub log {
 
 
 sub init_debug {
-	$debug=1;
+	$debug = 1;
 }
-
 
 
 sub init_log {
@@ -58,10 +58,8 @@ sub init_log {
 }
 
 
-
-
 sub unlink_log {
-	my $file=shift;
+	my $file    = shift;
 	my $default = "mpx-rif.log";
 
 	if ( !$file ) {
@@ -70,20 +68,19 @@ sub unlink_log {
 
 	debug "Enter unlink_log ($file)";
 
+	if ( -f $file ) {
 
-	if (-f $file) {
 		#debug "about to unlink logfile $file";
 		unlink $file or warn "cannot delete old file $!";
 		return 1 unless $!;
 		return if $!;
-	} else {
+	}
+	else {
 		debug "logfile does not exist so nothing to do $file";
 	}
 
 }
-
 1;
-
 __END__
 =pod
 
@@ -93,7 +90,7 @@ MPX::RIF::Helper - - For stuff that I want to inherit from elsewhere in MPX::RIF
 
 =head1 VERSION
 
-version 0.019
+version 0.020
 
 =head1 SYNOPSIS
 
@@ -123,7 +120,7 @@ is not valid.
 
 =head2 MPX::RIF::Helper::init_log($logfile);
 
-	$logfile is optional.
+	$logfile is optional. 
 
 =head2 unlink_log ($logfile);
 

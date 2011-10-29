@@ -158,9 +158,8 @@ sub lookupObjId {
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
 		my $identNr  = $resource->get('identNr');
-		if ($identNr) {
+		if ($identNr) { 
 			my $objId = $self->_lookupObjId($identNr);
-
 			#debug "lookup $identNr";
 			#take out the identNr, not needed anymore!
 			delete $resource->{identNr};
@@ -243,6 +242,28 @@ sub _lookupObjId {
 		croak "Internal Error: _lookupObjId called without identNr";
 	}
 
+	#if (testWholeA ($identNr)) {
+	#	matchIdentNr ($identNr, exact) or
+	#	matchIdentNr ($identNr, parts)
+	#}
+
+	#if (testWholeB ($identNr)) {
+		#my @parts=wholeB2Parts(identNr);
+		#foreach (@parts ) {
+			#@matches=matchIdentNr ($_, exact); #only one	
+			#@matches=matchIdentNr ($_, parts); #can be multiple	
+		#}
+	#}
+	
+	#if whole in b-notation try for exactMatch for all parts
+	#if while in a notation call variant of exactMatch which ignores 3rd part
+	#match (identNr, exact);
+	#match (identNr, exactAndParts)
+	#testIdentNrWholeA
+	#testIdentNrWholeB
+	#there can be only one. If several return only latest export
+	#objId=exactMatch (IdentNr)
+
 	#debug "Enter _lookupObjId (look for $identNr)";
 
 	#Soll ist Lars Methode: Konvolut-DS soll in M+ sein sowie
@@ -305,7 +326,7 @@ sub _lookupObjId {
 
 	}
 
-	debug "_lookupObjId $identNr->$objId";
+	debug "lookupObjId $identNr->$objId";
 	return $objId;
 }
 

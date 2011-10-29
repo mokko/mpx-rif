@@ -244,7 +244,6 @@ sub _lookupObjId {
 	}
 
 	#debug "Enter _lookupObjId (look for $identNr)";
-	debug "_lookupObjId $identNr";
 
 	#Soll ist Lars Methode: Konvolut-DS soll in M+ sein sowie
 	#eigener DS für Unternummern. Damit wir nicht mehrere ObjIds für einen
@@ -252,16 +251,18 @@ sub _lookupObjId {
 	#tisch von M+ erzeugt werden und mit 'Ident. Unternummer' qualifiziert
 	#werden
 
+	#ohne Unternummer
+	#my $xpath = q(
+	#	mpx:museumPlusExport/mpx:sammlungsobjekt[mpx:identNr
+	#	[
+	#			@art != 'Ident. Unternummer' or not (@art)
+	#	]
+	#);
+	#mit Unternummer
 	my $xpath = q(
-		mpx:museumPlusExport/mpx:sammlungsobjekt[
-			mpx:identNr[
-				@art != 'Ident. Unternummer' or not (@art)
-			]
+		mpx:museumPlusExport/mpx:sammlungsobjekt[mpx:identNr
 	);
 	$xpath .= qq(= '$identNr']);
-
-	#$xpath .= q(/@objId);
-
 	#debug "   xpath:\n   ".$xpath;
 
 	my @nodes = $doc->findnodes($xpath);
@@ -279,7 +280,7 @@ sub _lookupObjId {
 		return;
 	}
 
-	my $objId = $nodes[0]->string_value();
+	my $objId = $nodes[0]->findvalue('@objId');
 
 	#return the objId of newest export if NOT unique
 	if ( scalar @nodes > 1 ) {
@@ -291,19 +292,20 @@ sub _lookupObjId {
 
 		#take node with newest (i.e. biggest) exportdatum
 
-		my $expdatum='';
+		my $expdatum = '';
 		foreach my $object (@nodes) {
 			if ( $object->findvalue('@exportdatum') gt $expdatum ) {
 				$newestObject = $object;
 			}
 		}
 		$objId = $newestObject->findvalue('@objId');
-		my $msg= "\tIDENTIFIED AMBIGUOUS: $identNr-> objId $objId";
+		my $msg = "   IDENTIFIED AMBIGUOUS: $identNr-> objId $objId";
 		debug $msg;
 		log $msg;
 
 	}
 
+	debug "_lookupObjId $identNr->$objId";
 	return $objId;
 }
 

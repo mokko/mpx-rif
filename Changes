@@ -1,4 +1,7 @@
 Revision history for MPX-RIF
+0.020- 2011-10-29
+        mpx-rif: fix bug which wrote complex string instead objId in 
+        verknuepftes Objekt
 0.019- 2011-10-29
         mpx-rif: IdentNr parser returned error value 1
 0.018- 2011-10-28

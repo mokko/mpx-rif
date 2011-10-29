@@ -1,9 +1,10 @@
 package MPX::RIF::Resource;
 # ABSTRACT: deal with resources and features
-use MPX::RIF::Helper qw(debug log);
 use Carp qw/carp croak/;
 use strict;
 use warnings;
+use MPX::RIF::Helper qw(debug log);
+MPX::RIF::Helper::init_log ();
 
 =head1 NAME
 

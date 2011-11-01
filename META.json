@@ -23,6 +23,7 @@
          "requires" : {
             "Carp" : 0,
             "Cwd" : 0,
+            "Data::Dumper" : 0,
             "Date::Manip" : 0,
             "Encode" : 0,
             "Exporter" : 0,
@@ -69,6 +70,6 @@
          "web" : "https://github.com/mokko/mpx-rif"
       }
    },
-   "version" : "0.020"
+   "version" : "0.021"
 }
 

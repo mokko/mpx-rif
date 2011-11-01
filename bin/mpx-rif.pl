@@ -91,7 +91,7 @@ mpx-rif.pl - command line frontend for MPX::RIF
 
 =head1 VERSION
 
-version 0.020
+version 0.021
 
 =head2 SYNOPSIS
 
@@ -113,38 +113,38 @@ Executes all steps one after according to configuration.
 =head2 DECRIPTION
 
 The steps are
- (1) scandir - Read the directory specified in configuration recursively,
-               filter files of one or several types (extensions), write
-               the resulting file list in the resource store, dump the
-               store (containing the file list) as yaml (for debugging
-               purposes).
-               If option STOP=1 is specified the MPX::RIF will exit here.
+(1) scandir - Read the directory specified in configuration recursively,
+filter files of one or several types (extensions), write the resulting 
+file list in the resource store, dump the store (containing the file list) 
+as yaml (for debugging purposes). 
 
- (2) parsedir - Parse the filepath for information. This is done in an external
- 			   module since it is very specific to the project, e.g. different
- 			   for MIMO than for 78s. The result is saved in the resource
- 			   store and dumped to yaml for debugging.
+If option -s 1 is specified the MPX::RIF will exit here.
 
- (3) objIdloopup - To add the metadata of the resource store to existing mpx
- 			   data we need to add the right objId to each multimediaObjekt.
- 			   We look this information up in one big xml file which should
- 			   contain all exported Sammlungsobjekte.
+Resource store is dumped as yaml to check if this step was successful.
 
- 			   Now a harvester is included.
+(2) parsedir - Parse the filepath for information. This is done in an external
+module since it is very specific to the project, e.g. different for MIMO than 
+for 78s. The result is saved in the resource store and dumped to yaml for 
+debugging.
 
- 			   Resource store is dumped as yaml to check if this step was
- 			   successful.
+Resource store is dumped as yaml to check if this step was successful.
 
- (4) filter - If a resource lacks one of a list of required features, the
-			   resource is dropped (deleted) form the resource store.
+(3) objIdloopup - To add the metadata of the resource store to existing mpx
+data we need to add the right objId to each multimediaObjekt. We look this 
+information up in one big xml file which should contain all exported 
+Sammlungsobjekte.
 
- (5) writeXML - The resource store is converted to XML-MPX or more precisely to
- 			   multimediaobjekt-records. The resulting file will be manually
- 			   inserted into existing big mpx file and (re)imported in the OAI
- 			   data provider. (Alternatively, I could write a variant of the
- 			   digester which digests mulitmediaobjekte.)
+Now a harvester is included. Suppress with -n option
 
- (6) validate - validate XML and check for duplicate mulId
+Resource store is dumped as yaml to check if this step was successful.
+
+(4) filter - If a resource lacks one of a list of required features, the 
+resource is dropped (deleted) form the resource store.
+
+(5) writeXML - The resource store is converted to XML-MPX or more precisely to 
+multimediaobjekt-records. 
+
+(6) validate - validate XML and check for duplicate mulId
 
 =head1 AUTHOR
 

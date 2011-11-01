@@ -1,6 +1,6 @@
 package MPX::RIF::MIMO;
 {
-  $MPX::RIF::MIMO::VERSION = '0.020';
+  $MPX::RIF::MIMO::VERSION = '0.021';
 }
 
 # ABSTRACT: MIMO specific logic
@@ -179,13 +179,14 @@ sub identNr {
 		}
 	}
 
+	#Auf speziellen Wunsch von Andreas VII A, VII B sind jetzt erlaubt.
 	#lowercase for 2
-	if ( $1 eq 'VII' ) {
-		if ( $2 !~ /[a-z]{1,2}/ ) {
-			identErr( "VII: 2nd element is not lowercase:  $2", $file, $path );
-			return;
-		}
-	}
+	#if ( $1 eq 'VII' ) {
+	#	if ( $2 !~ /[a-z]{1,2}/ ) {
+	#		identErr( "VII: 2nd element is not lowercase:  $2", $file, $path );
+	#		return;
+	#	}
+	#}
 
 	#
 	# JOINING
@@ -421,7 +422,7 @@ MPX::RIF::MIMO - MIMO specific logic
 
 =head1 VERSION
 
-version 0.020
+version 0.021
 
 =head1 DESCRIPTION
 

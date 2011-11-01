@@ -2,7 +2,7 @@ NAME
     MPX::RIF - build cheap mpx from filenames etc.
 
 VERSION
-    version 0.020
+    version 0.021
 
 SYNOPSIS
     Read a yaml config file, parse a directory, extract information from
@@ -120,14 +120,6 @@ FUNCTIONS
     Expects DOM or doc, never sure about it. Returns xpc.
 
     Register prefix mpx with http://www.mpx.org/mpx
-
-  testparser($ilepath);
-    Just to illustrate how simple the extension could be. It expects a
-    single filepath and returns a hashref with key/value pairs, like this:
-
-    $object={ key=>value, identNr=>'12345d', }
-
-    might soon be superseded by MPX::RIF::Resource
 
 RATIONALE
     There are many images. It can take a long to enter them manually in the

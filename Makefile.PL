@@ -21,6 +21,7 @@ my %WriteMakefileArgs = (
   },
   "DISTNAME" => "MPX-RIF",
   "EXE_FILES" => [
+    "bin/flickschuster.pl",
     "bin/MIMO-resmvr.pl",
     "bin/mpx-rif.pl",
     "bin/newmulId.pl",
@@ -32,6 +33,7 @@ my %WriteMakefileArgs = (
   "PREREQ_PM" => {
     "Carp" => 0,
     "Cwd" => 0,
+    "Data::Dumper" => 0,
     "Date::Manip" => 0,
     "Encode" => 0,
     "Exporter" => 0,
@@ -57,7 +59,7 @@ my %WriteMakefileArgs = (
     "utf8" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.020",
+  "VERSION" => "0.021",
   "test" => {
     "TESTS" => "t/*.t"
   }

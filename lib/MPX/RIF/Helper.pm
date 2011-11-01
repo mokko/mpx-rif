@@ -1,6 +1,6 @@
 package MPX::RIF::Helper;
 {
-  $MPX::RIF::Helper::VERSION = '0.020';
+  $MPX::RIF::Helper::VERSION = '0.021';
 }
 
 # ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
@@ -66,7 +66,7 @@ sub unlink_log {
 		$file = $default;
 	}
 
-	debug "Enter unlink_log ($file)";
+	debug "delete log file ($file)";
 
 	if ( -f $file ) {
 
@@ -90,7 +90,7 @@ MPX::RIF::Helper - - For stuff that I want to inherit from elsewhere in MPX::RIF
 
 =head1 VERSION
 
-version 0.020
+version 0.021
 
 =head1 SYNOPSIS
 

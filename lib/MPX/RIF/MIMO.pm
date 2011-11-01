@@ -213,13 +213,14 @@ sub identNr {
 		}
 	}
 
+	#Auf speziellen Wunsch von Andreas VII A, VII B sind jetzt erlaubt.
 	#lowercase for 2
-	if ( $1 eq 'VII' ) {
-		if ( $2 !~ /[a-z]{1,2}/ ) {
-			identErr( "VII: 2nd element is not lowercase:  $2", $file, $path );
-			return;
-		}
-	}
+	#if ( $1 eq 'VII' ) {
+	#	if ( $2 !~ /[a-z]{1,2}/ ) {
+	#		identErr( "VII: 2nd element is not lowercase:  $2", $file, $path );
+	#		return;
+	#	}
+	#}
 
 	#
 	# JOINING

@@ -103,7 +103,7 @@ sub unlink_log {
 		$file = $default;
 	}
 
-	debug "Enter unlink_log ($file)";
+	debug "delete log file ($file)";
 
 	if ( -f $file ) {
 

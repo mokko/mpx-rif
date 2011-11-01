@@ -143,14 +143,14 @@ sub lookupObjId {
 	my $self   = shift;
 	my $mpx_fn = $self->{lookup};
 
-	#attemp harvest and write new file to disk for debugging
-	#avoid with NOHARVEST or -n
-	$self->_harvest();
-
 	if ( !$mpx_fn ) {
 		die 'ERROR: loopupObjId - cannot execute since no mpx data '
 		  . 'specified!';
 	}
+
+	#attemp harvest and write new file to disk for debugging
+	#avoid with NOHARVEST or -n
+	$self->_harvest();
 
 	# loop over all resources
 	# at this point I should NOT need to check anymore if
@@ -158,8 +158,9 @@ sub lookupObjId {
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
 		my $identNr  = $resource->get('identNr');
-		if ($identNr) { 
+		if ($identNr) {
 			my $objId = $self->_lookupObjId($identNr);
+
 			#debug "lookup $identNr";
 			#take out the identNr, not needed anymore!
 			delete $resource->{identNr};
@@ -228,33 +229,32 @@ sub _lookupObjId {
 	my $self    = shift;
 	my $identNr = shift;
 
-	#necessary to run _lookupObjId
-	if ( !$self->{xpc} ) {
-		$self->_loadMPX;
-	}
-	my $doc = $self->{xpc};
-
-	if ( !$doc ) {
-		die "Something went terribly wrong";
-	}
-
 	if ( !$identNr ) {
 		croak "Internal Error: _lookupObjId called without identNr";
 	}
 
-	#if (testWholeA ($identNr)) {
+	#debug "Enter _lookupObjId (look for $identNr)";
+
+	my $objId = $self->matchIdent( $identNr, 'exact' );
+
+	if ($objId) {
+		debug "lookupObjId $identNr->$objId";
+		return $objId;
+	}
+	return;
+
+	#if (testWholeA ($identNr))
 	#	matchIdentNr ($identNr, exact) or
 	#	matchIdentNr ($identNr, parts)
-	#}
+	#
 
-	#if (testWholeB ($identNr)) {
-		#my @parts=wholeB2Parts(identNr);
-		#foreach (@parts ) {
-			#@matches=matchIdentNr ($_, exact); #only one	
-			#@matches=matchIdentNr ($_, parts); #can be multiple	
-		#}
-	#}
-	
+	#if (testWholeB ($identNr))
+	#my @parts=wholeB2Parts(identNr);
+	#foreach (@parts ) {
+	#@matches=matchIdentNr ($_, exact); #only one
+	#@matches=matchIdentNr ($_, parts); #can be multiple
+	#
+
 	#if whole in b-notation try for exactMatch for all parts
 	#if while in a notation call variant of exactMatch which ignores 3rd part
 	#match (identNr, exact);
@@ -264,7 +264,22 @@ sub _lookupObjId {
 	#there can be only one. If several return only latest export
 	#objId=exactMatch (IdentNr)
 
-	#debug "Enter _lookupObjId (look for $identNr)";
+}
+
+sub matchIdent {
+	my $self    = shift;
+	my $identNr = shift;
+	my $type    = shift;
+
+	#necessary to run _lookupObjId
+	if ( !$self->{xpc} ) {
+		$self->_loadMPX;
+	}
+	my $doc = $self->{xpc};
+
+	if ( !$doc ) {
+		die "Something went terribly wrong";
+	}
 
 	#Soll ist Lars Methode: Konvolut-DS soll in M+ sein sowie
 	#eigener DS für Unternummern. Damit wir nicht mehrere ObjIds für einen
@@ -284,6 +299,7 @@ sub _lookupObjId {
 		mpx:museumPlusExport/mpx:sammlungsobjekt[mpx:identNr
 	);
 	$xpath .= qq(= '$identNr']);
+
 	#debug "   xpath:\n   ".$xpath;
 
 	my @nodes = $doc->findnodes($xpath);
@@ -325,8 +341,6 @@ sub _lookupObjId {
 		log $msg;
 
 	}
-
-	debug "lookupObjId $identNr->$objId";
 	return $objId;
 }
 
@@ -704,29 +718,6 @@ sub stop {
 	exit 0;
 }
 
-=func testparser($ilepath);
-
-Just to illustrate how simple the extension could be. It expects a single
-filepath and returns a hashref with key/value pairs, like this:
-
-$object={
-	key=>value,
-	identNr=>'12345d',
-}
-
-might soon be superseded by MPX::RIF::Resource
-
-=cut
-
-sub testparser {
-	my $filepath = shift;
-	my $item     = {
-		ok     => 'alles klar',
-		consti => 'konstant',
-	};
-	return $item;
-}
-
 =head1 INTERNAL INTERFACE
 
 =cut
@@ -804,13 +795,17 @@ sub _config {
 	#specific tests
 	if ( !$self->{BEGIN} ) {
 		if ( !-e $self->{scandir} ) {
-			print "Error: Specified scandir does not exit ($self->{scandir})\n";
-			exit 1;
-		}
+			warn
+			  "Warning: Specified scandir does not exit ($self->{scandir})\n";
 
-		if ( !-d $self->{scandir} ) {
-			print "Error: Scandir is no directory\n";
-			exit 1;
+			#exit 1;
+		}
+		else {
+			if ( !-d $self->{scandir} ) {
+				warn "Warning: Scandir is no directory\n";
+
+				#exit 1;
+			}
 		}
 	}
 
@@ -1138,4 +1133,40 @@ sub _unwrap {
 	return $stylesheet->transform($dom);
 }
 
-1;    # End of MPX::RIF
+sub flickschuster {
+	my $self = shift or die "Internal Error: Object missing!";
+	MPX::RIF::Helper::init_debug();
+	#loads 1-scandir.yml
+	$self->_loadStore( $temp->{1} );
+
+	#for debug only
+	use Data::Dumper qw(Dumper);
+
+	my $mpx_fn = $self->{lookup};
+	if ( !$mpx_fn ) {
+		die 'ERROR: loopupObjId - cannot execute since no mpx data '
+		  . 'specified!';
+	}
+
+	#debug Dumper $self;
+	
+
+	foreach my $id ( $self->_resourceIds ) {
+		my $resource = $self->_getResource($id);
+		$resource=MPX::RIF::MIMO::parsedir ($resource);
+		my $identNr = $resource->get('identNr');
+		my $objId = $self->_lookupObjId($identNr);
+		if (!$objId) {
+			#cases identNr can be 
+			#whole in A notation ... VII c 123
+			#whole in B notation or ... VII c 123 a,b
+			#a part ... VII c 123 a
+
+			debug "No objId obtained as exact match, assume this a whole in A notation and look for parts"
+		}
+		debug "resource-identNr $identNr";
+	}
+
+}
+
+1;                       # End of MPX::RIF

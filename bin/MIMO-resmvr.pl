@@ -384,7 +384,7 @@ MIMO-resmvr.pl - resource mover for MIMO
 
 =head1 VERSION
 
-version 0.022
+version 0.023
 
 =head1 SYNOPSIS
 

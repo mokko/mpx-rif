@@ -20,11 +20,11 @@ my %WriteMakefileArgs = (
   },
   "DISTNAME" => "MPX-RIF",
   "EXE_FILES" => [
-    "bin/flickschuster.pl",
     "bin/MIMO-resmvr.pl",
     "bin/mpx-rif.pl",
     "bin/newmulId.pl",
     "bin/rename-images.pl",
+    "bin/saxon.pl",
     "bin/testXpath.pl",
     "bin/xpath.pl"
   ],
@@ -59,7 +59,7 @@ my %WriteMakefileArgs = (
     "utf8" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.022",
+  "VERSION" => "0.023",
   "test" => {
     "TESTS" => "t/*.t"
   }

@@ -1,6 +1,6 @@
 package MPX::RIF::Resource;
 {
-  $MPX::RIF::Resource::VERSION = '0.022';
+  $MPX::RIF::Resource::VERSION = '0.023';
 }
 # ABSTRACT: deal with resources and features
 use Carp qw/carp croak/;
@@ -173,7 +173,7 @@ MPX::RIF::Resource - deal with resources and features
 
 =head1 VERSION
 
-version 0.022
+version 0.023
 
 =head1 SYNOPSIS
 

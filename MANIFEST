@@ -11,6 +11,7 @@ bin/mpx-rif.pl
 bin/newmulId.pl
 bin/rename-images.pl
 bin/testXpath.pl
+bin/xpath.pl
 lib/MPX/RIF.pm
 lib/MPX/RIF/Helper.pm
 lib/MPX/RIF/MIMO.pm
@@ -26,5 +27,6 @@ t/release-pod-syntax.t
 t/release-test-version.t
 weaver.ini
 xsd/mpx.xsd
+xsl/countStandardbild.xsl
 xsl/listIdentNr.xsl
 xsl/unwrap.xsl

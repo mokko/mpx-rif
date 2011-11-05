@@ -2,7 +2,7 @@ NAME
     MPX::RIF - build cheap mpx from filenames etc.
 
 VERSION
-    version 0.021
+    version 0.022
 
 SYNOPSIS
     Read a yaml config file, parse a directory, extract information from

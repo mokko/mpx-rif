@@ -1,6 +1,6 @@
 package MPX::RIF;
 {
-  $MPX::RIF::VERSION = '0.021';
+  $MPX::RIF::VERSION = '0.022';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
@@ -1000,7 +1000,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.021
+version 0.022
 
 =head1 SYNOPSIS
 

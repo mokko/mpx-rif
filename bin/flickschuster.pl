@@ -79,7 +79,7 @@ Flickschuster.pl - fix resource filenames to match IdentNr in latestharvest.mpx
 
 =head1 VERSION
 
-version 0.021
+version 0.022
 
 =head1 SYNOPSIS
 

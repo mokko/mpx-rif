@@ -13,8 +13,7 @@ my %WriteMakefileArgs = (
   "AUTHOR" => "Maurice Mengel <mauricemengel\@gmail.com>",
   "BUILD_REQUIRES" => {
     "English" => 0,
-    "Test::More" => 0,
-    "perl" => "5.006"
+    "Test::More" => 0
   },
   "CONFIGURE_REQUIRES" => {
     "ExtUtils::MakeMaker" => "6.30"
@@ -26,7 +25,8 @@ my %WriteMakefileArgs = (
     "bin/mpx-rif.pl",
     "bin/newmulId.pl",
     "bin/rename-images.pl",
-    "bin/testXpath.pl"
+    "bin/testXpath.pl",
+    "bin/xpath.pl"
   ],
   "LICENSE" => "perl",
   "NAME" => "MPX::RIF",
@@ -59,7 +59,7 @@ my %WriteMakefileArgs = (
     "utf8" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.021",
+  "VERSION" => "0.022",
   "test" => {
     "TESTS" => "t/*.t"
   }

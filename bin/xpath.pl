@@ -54,6 +54,7 @@ this within a few hours.
 my $namespaces = {
 	prefix => 'uri',
 	mpx    => 'http://www.mpx.org/mpx',
+	lido =>'http://www.lido-schema.org', 
 };
 
 $opts->{namespaces} = $namespaces;

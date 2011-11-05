@@ -203,9 +203,12 @@ sub getMulId {
 
 =func my $todo=imageWork ($old, $new);
 
-Expects two file paths: the current location and the new location. It will
-check if image is bigger 800 px in either width or length. The new version
-will be limited to 800 px.
+Expects two file paths: the current location and the new location. imageWork 
+return 1 if original file still needs to be copied/renamed and nothing it no
+such action is required.
+
+imageWork checks if image is bigger 800 px in either width or length. The new version
+will be limited to 800 px. It will move those images at new location.
 
 I assume I already tested if $old exists and get here only if it does.
 
@@ -240,9 +243,9 @@ sub imageWork {
 		return;    #on return empty do NOT move!
 	} else {
 		if ( $width < 800 && $height < 800 ) {
-			$log->warning("image $old is smaller than 800 px");
+			$log->warning("image smaller than 800 px: $old");
 		}
-		return 1;    #on return non-empty DO move!
+		return 1;    #on return move this file anyways!
 	}
 }
 

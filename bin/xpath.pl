@@ -53,7 +53,7 @@ this within a few hours.
 my $namespaces = {
 	prefix => 'uri',
 	mpx    => 'http://www.mpx.org/mpx',
-	lido =>'http://www.lido-schema.org', 
+	lido   => 'http://www.lido-schema.org',
 };
 
 $opts->{namespaces} = $namespaces;
@@ -96,19 +96,24 @@ sub contextQuery {
 	my $doc   = shift or die "Need doc";
 
 	my $object = $xpc->find( $xpath, $doc );
-	output ($object);
+	output($object);
 
 }
 
 sub output {
-	my $object=shift or die "Need object!";
+	my $object = shift;
+
+	if ( !$object ) {
+		debug "no results\n";
+		return;
+	}
 	debug 'Response object type: ' . ref $object;
 	if ( ref $object ne 'XML::LibXML::NodeList' ) {
 		print $object;
 	}
 	else {
 		foreach ( $object->get_nodelist() ) {
-			print $_->toString(1);
+			print $_->toString(1) . "\n";
 		}
 	}
 	print "\n";
@@ -119,9 +124,8 @@ sub query {
 	my $doc   = shift or die "Need doc";
 
 	my $object = $doc->find($xpath);
-	output ($object);
+	output($object);
 }
-
 
 sub initNS {
 	my $opt = shift or die "Need opts!";

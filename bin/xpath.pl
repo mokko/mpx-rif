@@ -109,7 +109,7 @@ sub output {
 	}
 	else {
 		foreach ( $object->get_nodelist() ) {
-			print $_->toString;
+			print $_->toString(1);
 		}
 	}
 	print "\n";

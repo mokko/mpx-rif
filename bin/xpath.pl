@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # PODNAME: xpath.pl
-# ABSTRACT: apply xpath on xml files
+# ABSTRACT: query xml files via command line xpath
 
 use strict;
 use warnings;
@@ -15,12 +15,11 @@ pod2usage() if ( $opts->{h} );
 
 =head1 SYNOPSIS
 
-xpath.pl -f file.xml '//xpath'
-xpath.pl -n mpx -f file.xml '//mpx:xpath'
+xpath.pl -f file.xml "//xpath"
+xpath.pl -n mpx -f file.xml "//mpx:xpath"
 xpath.pl -h
 
-I put the xpath expression in single quotes which I expect your shell will 
-like. Strictly speaking it's not a matter of this program.
+(Quotes are a matter of your shell.)
 
 =head2 COMMAND LINE OPTIONS
 
@@ -33,7 +32,7 @@ help: this text
 =item -n
 
 namespace: speficy namespace prefix. Prefix has to be associated with namespace
-uri somehwere. Currently inside this file.
+uri somehwere. Currently inside this file. todo.
 
 =item -v
 

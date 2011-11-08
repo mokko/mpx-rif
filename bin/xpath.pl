@@ -148,7 +148,7 @@ sub output {
 	my $object = shift;
 
 	if ( !$object ) {
-		debug "no results\n";
+		debug "no results\n"; #currently outputs nothing if no result and no -d
 		return;
 	}
 

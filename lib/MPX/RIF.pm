@@ -41,7 +41,7 @@ information (XML).
 
     use MPX::RIF;
 
-    my $faker = MPX::RIF->new(%config);
+    my $faker = MPX::RIF->new($config);
     my $faker->run; #run calls all the steps in the normal order
     #alternatively you can call the steps yourself
 
@@ -85,7 +85,7 @@ messages which should help you finding quirks in your data.
 The tool is configurable. It's written in a haste i.e. no great code, but
 it should at least be readable.
 
-=method my $faker=MPX::RIF::new (%CONFIG);
+=method my $faker=MPX::RIF::new ($CONFIG);
 
 REQUIRED
 config is the path to a yaml configuration file.
@@ -363,7 +363,7 @@ sub parsedir {
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
 
-		#debug "SYD: $resource" . ref $resource;
+		#debug "$resource" . ref $resource;
 		$resource = $self->_dirparser($resource);
 		$resource->addConstants( $self->{constants} );
 

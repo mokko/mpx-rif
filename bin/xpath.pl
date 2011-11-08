@@ -61,6 +61,10 @@ this within a few hours.
 
 =cut
 
+##
+## MAIN
+##
+
 commandLineSanity($opts);
 
 my $xpc = initNS($opts);
@@ -70,15 +74,7 @@ my $doc = XML::LibXML->load_xml( location => $opts->{f} )
 
 my $xpath = prepareXpath($opts);
 
-#it seems that we don't need that test
-#if ( !$xpath ) {
-#	print "Error: Can't compile xpath ($ARGV[0])!\n";
-#	exit 1;
-#}
-
-##
-## Do the actual query
-##
+# Do the actual query
 if ($xpc) {
 	contextQuery( $xpc, $xpath, $doc );
 }
@@ -88,9 +84,15 @@ else {
 
 exit;
 
-#
-# SUBs
-#
+##
+## SUBs
+##
+
+=func my $xpath=prepareXpath ($opts);
+
+Expects hashref, returns compiled xpath expression. Dies on compile errors.
+
+=cut
 
 sub prepareXpath {
 	my $opts = shift or die "No opts!";
@@ -111,6 +113,13 @@ sub prepareXpath {
 	return XML::LibXML::XPathExpression->new($raw);
 }
 
+=func contextQuery ($xpc, xpath,$doc);
+
+Feeds result to output which prints to STDOUT
+Analog to query.
+
+=cut
+
 sub contextQuery {
 	my $xpc   = shift or die "Need xpc";
 	my $xpath = shift or die "Need xpath";
@@ -120,6 +129,12 @@ sub contextQuery {
 	output($object);
 
 }
+
+=func output ($object);
+
+Expects a LibXML obkject. Prints to STDOUT. Returns empty if no result.
+
+=cut
 
 sub output {
 	my $object = shift;
@@ -140,6 +155,14 @@ sub output {
 	print "\n";
 }
 
+=func query ($xpath, $doc);
+
+Expects xpath expression (precompiled or as string) and LibXML document. 
+Feeds return value to  function output().
+
+TODO: test for xpath object.
+=cut
+
 sub query {
 	my $xpath = shift or die "Need xpath";
 	my $doc   = shift or die "Need doc";
@@ -148,6 +171,12 @@ sub query {
 	output($object);
 }
 
+=func my $xpc=initNS($opts);
+
+Expects hashref. Register namespace. If no prefix/uri pair is found, returns empty. 
+
+=cut
+
 sub initNS {
 	my $opt = shift or die "Need opts!";
 	my $prefix;
@@ -155,7 +184,7 @@ sub initNS {
 
 	#prefix either comes from command line or from yml-config
 	if ( $opts->{n} ) {
-		my $prefix = $opts->{n};
+		$prefix = $opts->{n};
 	}
 
 	if ( $opts->{s} ) {
@@ -163,7 +192,6 @@ sub initNS {
 		$prefix = $opts->{config}->{savedqueries}->{$queryname}->{ns};
 	}
 
-	#if no prefix return right away
 	if ( !$prefix ) {
 		return;
 	}
@@ -182,11 +210,19 @@ sub initNS {
 	return $xpc;
 }
 
+=func commandLineSanity ($opts);
+
+Expects a hashref. Die on failure. Rewrite $opts as needed.
+
+Process options and arguments. 
+
+=cut
+
 sub commandLineSanity {
 	my $opts = shift or die "Need opts";
 	my $file = File::Spec->catfile( $ENV{HOME}, '.xpathrc.yml' );
 	debug "Debug/verbose mode on";
-	debug "Looking for file:$file";
+	debug "Looking for config in file:$file";
 
 	if ( -f $file ) {
 		$opts->{config} = LoadFile($file);
@@ -195,7 +231,7 @@ sub commandLineSanity {
 
 	if ( !$opts->{f} ) {
 		print "Error: Need xml file! Specify using -f\n";
-		exit;
+		exit 1;
 	}
 
 	if ( !-f $opts->{f} ) {
@@ -208,6 +244,12 @@ sub commandLineSanity {
 		exit 1;
 	}
 }
+
+=func debug "$msg";
+
+print message to standard output.
+
+=cut
 
 sub debug {
 	my $msg = shift;

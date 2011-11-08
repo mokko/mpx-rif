@@ -2,8 +2,8 @@ package MPX::RIF;
 
 # ABSTRACT: build cheap mpx from filenames etc.
 
-use warnings;
 use strict;
+use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 

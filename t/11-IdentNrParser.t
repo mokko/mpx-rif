@@ -30,18 +30,25 @@ my %cases = (
 
 );
 
-plan tests => scalar( keys %cases );
-my $dir=File::Spec->catfile( $FindBin::Bin, 'tdata');
+
+my $dir = File::Spec->catfile( $FindBin::Bin, 'tdata' );
+
+if ( !-d $dir ) {
+	plan skip_all => 'tdata not available';
+} else {
+	plan tests => scalar( keys %cases );
+}
+
 my $config = {
 	CONFIG => File::Spec->catfile( $dir, 'config.yml' ),
+
 	#	DEBUG  => 1,
 };
 
 my $faker = new MPX::RIF($config);
 
 #loadStore
-$faker->_loadStore(
-	File::Spec->catfile( $dir, $MPX::RIF::temp->{1} ) );
+$faker->_loadStore( File::Spec->catfile( $dir, $MPX::RIF::temp->{1} ) );
 
 #parsedir
 $faker->parsedir();

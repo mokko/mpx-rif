@@ -1,12 +1,13 @@
 package MPX::RIF::Helper;
-
-# ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
-
+use strict;
+use warnings;
 use Exporter;
 use Log::Handler;
 
-@ISA       = qw(Exporter);
-@EXPORT_OK = qw(debug log);
+# ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
+
+our @ISA       = qw(Exporter);
+our @EXPORT_OK = qw(debug log);
 
 our $debug = 0;
 our $log   = init_log();    #will store the logger object

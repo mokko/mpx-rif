@@ -31,10 +31,9 @@ my %cases = (
 );
 
 plan tests => scalar( keys %cases );
-
+my $dir=File::Spec->catfile( $FindBin::Bin, 'tdata');
 my $config = {
-	CONFIG => File::Spec->catfile( $FindBin::Bin, 'data', 'config.yml' ),
-
+	CONFIG => File::Spec->catfile( $dir, 'config.yml' ),
 	#	DEBUG  => 1,
 };
 
@@ -42,7 +41,7 @@ my $faker = new MPX::RIF($config);
 
 #loadStore
 $faker->_loadStore(
-	File::Spec->catfile( $FindBin::Bin, 'data', $MPX::RIF::temp->{1} ) );
+	File::Spec->catfile( $dir, $MPX::RIF::temp->{1} ) );
 
 #parsedir
 $faker->parsedir();

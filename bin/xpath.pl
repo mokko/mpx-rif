@@ -1,27 +1,28 @@
 #!/usr/bin/perl
 # PODNAME: xpath.pl
-# ABSTRACT: apply xpath on xml files
+# ABSTRACT: query xml files via command line xpath
 
 use strict;
 use warnings;
 use XML::LibXML;
 use Pod::Usage;
 use Getopt::Std;
+use YAML::XS qw(LoadFile);
+use File::Spec;
+
+#binmode(STDOUT, ":utf8"); then output in mintty is not scrambled anymore, but files
+#created with "xpath.pl ... > test.xml" don't open correctly in xemacs
+#I guess it's better to have display scrambled than files
 
 sub debug;
 
-getopts( 'f:vhn:', my $opts = {} );
+getopts( 'df:hn:s:v', my $opts = {} );
 pod2usage() if ( $opts->{h} );
 
 
-#todo: this should be in a configuration file
-my $namespaces = {
-	prefix => 'uri',
-	mpx    => 'http://www.mpx.org/mpx',
-	lido =>'http://www.lido-schema.org', 
-};
-
-$opts->{namespaces} = $namespaces;
+##
+## MAIN
+##
 
 commandLineSanity($opts);
 
@@ -30,18 +31,9 @@ my $xpc = initNS($opts);
 my $doc = XML::LibXML->load_xml( location => $opts->{f} )
   or die "Problems loading xml from file ($opts->{f})";
 
-debug "Xpath from command line: $ARGV[0]";
-my $xpath = XML::LibXML::XPathExpression->new( $ARGV[0] );
+my $xpath = prepareXpath($opts);
 
-#it seems that we don't need that test
-#if ( !$xpath ) {
-#	print "Error: Can't compile xpath ($ARGV[0])!\n";
-#	exit 1;
-#}
-
-##
-## Do the actual query
-##
+# Do the actual query
 if ($xpc) {
 	contextQuery( $xpc, $xpath, $doc );
 }
@@ -51,9 +43,30 @@ else {
 
 exit;
 
-#
-# SUBs
-#
+##
+## SUBs
+##
+
+
+sub prepareXpath {
+	my $opts = shift or die "No opts!";
+	my $raw;
+	if ( $ARGV[0] ) {
+		$raw = $ARGV[0];
+		debug "Xpath from command line: $raw";
+	}
+	else {
+		my $queryname = $opts->{s};
+		$raw = $opts->{config}->{savedqueries}->{$queryname}->{xpath};
+		if ( !$raw ) {
+			print "Error: saved xpath not found\n";
+			exit 1;
+		}
+		debug 'Xpath from saved query: ' . $opts->{s} . ':' . $raw;
+	}
+	return XML::LibXML::XPathExpression->new($raw);
+}
+
 
 sub contextQuery {
 	my $xpc   = shift or die "Need xpc";
@@ -61,47 +74,64 @@ sub contextQuery {
 	my $doc   = shift or die "Need doc";
 
 	my $object = $xpc->find( $xpath, $doc );
-	output ($object);
+	output($object);
 
 }
 
+
 sub output {
-	my $object=shift or die "Need object!";
+	my $object = shift;
+
+	if ( !$object ) {
+		debug "no results\n";
+		return;
+	}
 	debug 'Response object type: ' . ref $object;
 	if ( ref $object ne 'XML::LibXML::NodeList' ) {
 		print $object;
 	}
 	else {
-		foreach ( $object->get_nodelist() ) {
-			print $_->toString;
+		foreach my $item ( $object->get_nodelist() ) {
+			print $item->toString(1) . "\n";
 		}
 	}
 	print "\n";
 }
+
 
 sub query {
 	my $xpath = shift or die "Need xpath";
 	my $doc   = shift or die "Need doc";
 
 	my $object = $doc->find($xpath);
-	output ($object);
+	output($object);
 }
 
 
 sub initNS {
 	my $opt = shift or die "Need opts!";
+	my $prefix;
+	my $uri;
 
-	if ( !$opts->{n} ) {
+	#prefix either comes from command line or from yml-config
+	if ( $opts->{n} ) {
+		$prefix = $opts->{n};
+	}
+
+	if ( $opts->{s} ) {
+		my $queryname = $opts->{s};
+		$prefix = $opts->{config}->{savedqueries}->{$queryname}->{ns};
+	}
+
+	if ( !$prefix ) {
 		return;
 	}
 
-	my $prefix = $opts->{n};
-	my $uri    = $opts->{namespaces}->{$prefix};
+	$uri = $opts->{config}->{namespaces}->{$prefix};
 
 	if ( !$uri ) {
-		print "Error: namespace prefix not defined!\n";
+		print "Error: namespace uri not found!\n";
 		exit 1;
-
 	}
 
 	my $xpc = XML::LibXML::XPathContext->new();
@@ -111,14 +141,21 @@ sub initNS {
 	return $xpc;
 }
 
+
 sub commandLineSanity {
 	my $opts = shift or die "Need opts";
-
+	my $file = File::Spec->catfile( $ENV{HOME}, '.xpathrc.yml' );
 	debug "Debug/verbose mode on";
+	debug "Looking for config in file:$file";
+
+	if ( -f $file ) {
+		$opts->{config} = LoadFile($file);
+		debug "Config file loaded";
+	}
 
 	if ( !$opts->{f} ) {
 		print "Error: Need xml file! Specify using -f\n";
-		exit;
+		exit 1;
 	}
 
 	if ( !-f $opts->{f} ) {
@@ -126,12 +163,12 @@ sub commandLineSanity {
 		exit 1;
 	}
 
-	if ( !$ARGV[0] ) {
+	if ( !$ARGV[0] && !$opts->{s} ) {
 		print "Error: No xpath specified\n";
 		exit 1;
 	}
-
 }
+
 
 sub debug {
 	my $msg = shift;
@@ -145,37 +182,42 @@ __END__
 
 =head1 NAME
 
-xpath.pl - apply xpath on xml files
+xpath.pl - query xml files via command line xpath
 
 =head1 VERSION
 
-version 0.023
+version 0.024
 
 =head1 SYNOPSIS
 
-xpath.pl -f file.xml '//xpath'
-xpath.pl -n mpx -f file.xml '//mpx:xpath'
+xpath.pl -f file.xml "//xpath"
+xpath.pl -n mpx -f file.xml "//mpx:xpath"
 xpath.pl -h
 
-I put the xpath expression in single quotes which I expect your shell will 
-like. Strictly speaking it's not a matter of this program.
+(Quotes are a matter of your shell.)
 
 =head2 COMMAND LINE OPTIONS
 
 =over 1
 
-=item -h
+=item -h help
 
-help: this text
+this text
 
-=item -n
+=item -n string namespace
 
-namespace: speficy namespace prefix. Prefix has to be associated with namespace
-uri somehwere. Currently inside this file.
+Provide a prefix. Prefix has to be associated with namespace uri somehwere. 
+Currently inside this file. todo.
 
-=item -v
+=item -v verbose - be more verbose
 
-verbose: be more verbose
+-d is synonymous with -v
+
+=item -s string - use a saved queries
+
+  e.g. -s MIMO
+
+=item -l list saved queries
 
 =back
 
@@ -185,6 +227,42 @@ Little tool that applies xpath queries to xml. Let's see how elegant I can make
 this within a few hours.
 
 =head2 TODO
+
+=head1 FUNCTIONS
+
+=head2 my $xpath=prepareXpath ($opts);
+
+Expects hashref, returns compiled xpath expression. Dies on compile errors.
+
+=head2 contextQuery ($xpc, xpath,$doc);
+
+Feeds result to output which prints to STDOUT
+Analog to query.
+
+=head2 output ($object);
+
+Expects a LibXML obkject. Prints to STDOUT. Returns empty if no result.
+
+=head2 query ($xpath, $doc);
+
+Expects xpath expression (precompiled or as string) and LibXML document. 
+Feeds return value to  function output().
+
+TODO: test for xpath object.
+
+=head2 my $xpc=initNS($opts);
+
+Expects hashref. Register namespace. If no prefix/uri pair is found, returns empty. 
+
+=head2 commandLineSanity ($opts);
+
+Expects a hashref. Die on failure. Rewrite $opts as needed.
+
+Process options and arguments. 
+
+=head2 debug "$msg";
+
+print message to standard output.
 
 =head1 AUTHOR
 

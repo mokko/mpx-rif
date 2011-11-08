@@ -1,6 +1,6 @@
 package MPX::RIF;
 {
-  $MPX::RIF::VERSION = '0.023';
+  $MPX::RIF::VERSION = '0.024';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
@@ -498,6 +498,7 @@ sub writeXML {
 		my $now  = ConvertDate( ParseDateString("epoch $time") );
 
 		#new mulId now with number dependent file suffix
+		my $typ = $self->{data}->{$id}->get('typ');
 		my $objId  = $self->{data}->{$id}->get('verknüpftesObjekt');
 		my $pref   = $self->{data}->{$id}->get('pref');
 		my $suffix = $self->{data}->{$id}->get('multimediaErweiterung');
@@ -521,6 +522,12 @@ sub writeXML {
 				'mulId'       => $mulId,
 				'quelle'      => 'mpx-rif',
 			);
+
+			#Typ is optional
+			if ($typ) {
+				$attributes{typ}=$typ
+			}
+
 
 			#my $pref=$resource->get('pref');
 			if ( my $pref = $resource->get('pref') ) {
@@ -1000,7 +1007,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.023
+version 0.024
 
 =head1 SYNOPSIS
 

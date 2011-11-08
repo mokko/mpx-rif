@@ -1,8 +1,12 @@
 Revision history for MPX-RIF
+0.024- 2011-11-07
+	xpath.pl has better output
+	xpath.pl now takes advanced configuration from ~/.xpathrc.yml	
+	mpx-rif.pl: now creates multimediaobjekt/@typ if constant typ is defined in config/eg.yml
 0.023- 2011-11-05
-       xslt2.0 script to count fotographs and their metadata records
+       	xslt2.0 script to count fotographs and their metadata records
 0.022- 2011-11-05
-       little xpath tool for Andreas
+       	little xpath tool for Andreas
 0.021- 2011-11-01
 		flickschuster.pl angefangen; 
 		IdentNr parser changed specification again; 
@@ -17,10 +21,10 @@ Revision history for MPX-RIF
         mpx-rif: objId lookup: in case of ambiguous IdentNr, take lastest
         export.
 0.017- 2011-08-29
-	resmvr: refactoring, convert tif to jpg, introduce counter counting 
-	items copied and renamed	
+		resmvr: refactoring, convert tif to jpg, introduce counter counting 
+		items copied and renamed	
 0.016- 2011-08-26
-	mpx-rif.pl - correct identNr Parser for Dlg
+		mpx-rif.pl - correct identNr Parser for Dlg
 0.015- 2011-08-26
         mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
         This time it was that Unternummern were not excluded.

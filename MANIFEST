@@ -27,7 +27,7 @@ t/release-pod-syntax.t
 t/release-test-version.t
 weaver.ini
 xsd/mpx.xsd
+xsl/count.xsl
 xsl/countFotografen2.0.xsl
-xsl/countStandardbild.xsl
 xsl/listIdentNr.xsl
 xsl/unwrap.xsl

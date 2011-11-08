@@ -166,7 +166,13 @@ sub identNr {
 	       		[_|\s|\.]
 #5th element: a
 			(?:
-	        ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-z]{1,2})
+	        ([a-z]{1,2}|
+	         [a-z]{1,2}-[a-z]{1,2}|
+
+	         [a-z],[b-z]|
+	         [a-z],[b-z],[c-z]|
+
+	        [a-z]+[b-z]|)
 				#separator only if there is a 4th element
 	       		[_|\s|\.]||)
 #6th element: <1>

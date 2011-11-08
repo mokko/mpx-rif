@@ -2,7 +2,7 @@ NAME
     MPX::RIF - build cheap mpx from filenames etc.
 
 VERSION
-    version 0.024
+    version 0.025
 
 SYNOPSIS
     Read a yaml config file, parse a directory, extract information from
@@ -11,7 +11,7 @@ SYNOPSIS
 
         use MPX::RIF;
 
-        my $faker = MPX::RIF->new(%config);
+        my $faker = MPX::RIF->new($config);
         my $faker->run; #run calls all the steps in the normal order
         #alternatively you can call the steps yourself
 
@@ -37,7 +37,7 @@ SYNOPSIS
             #For more info see the method run (overview) and the individual methods.
 
 METHODS
-  my $faker=MPX::RIF::new (%CONFIG);
+  my $faker=MPX::RIF::new ($CONFIG);
     REQUIRED config is the path to a yaml configuration file.
     CONIG=>'/path/to/config.yml'
 

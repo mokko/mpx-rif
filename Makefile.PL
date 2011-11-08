@@ -12,7 +12,6 @@ my %WriteMakefileArgs = (
   "ABSTRACT" => "build cheap mpx from filenames etc.",
   "AUTHOR" => "Maurice Mengel <mauricemengel\@gmail.com>",
   "BUILD_REQUIRES" => {
-    "English" => 0,
     "Test::More" => 0
   },
   "CONFIGURE_REQUIRES" => {
@@ -59,7 +58,7 @@ my %WriteMakefileArgs = (
     "utf8" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.024",
+  "VERSION" => "0.025",
   "test" => {
     "TESTS" => "t/*.t"
   }

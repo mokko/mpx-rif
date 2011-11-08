@@ -1,12 +1,12 @@
 package MPX::RIF;
 {
-  $MPX::RIF::VERSION = '0.024';
+  $MPX::RIF::VERSION = '0.025';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
 
-use warnings;
 use strict;
+use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 
@@ -262,7 +262,7 @@ sub parsedir {
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
 
-		#debug "SYD: $resource" . ref $resource;
+		#debug "$resource" . ref $resource;
 		$resource = $self->_dirparser($resource);
 		$resource->addConstants( $self->{constants} );
 
@@ -1007,7 +1007,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.024
+version 0.025
 
 =head1 SYNOPSIS
 
@@ -1017,7 +1017,7 @@ information (XML).
 
     use MPX::RIF;
 
-    my $faker = MPX::RIF->new(%config);
+    my $faker = MPX::RIF->new($config);
     my $faker->run; #run calls all the steps in the normal order
     #alternatively you can call the steps yourself
 
@@ -1044,7 +1044,7 @@ information (XML).
 
 =head1 METHODS
 
-=head2 my $faker=MPX::RIF::new (%CONFIG);
+=head2 my $faker=MPX::RIF::new ($CONFIG);
 
 REQUIRED
 config is the path to a yaml configuration file.

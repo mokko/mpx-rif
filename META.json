@@ -52,7 +52,6 @@
       },
       "test" : {
          "requires" : {
-            "English" : 0,
             "Test::More" : 0,
             "perl" : "5.006"
          }
@@ -70,6 +69,6 @@
          "web" : "https://github.com/mokko/mpx-rif"
       }
    },
-   "version" : "0.024"
+   "version" : "0.025"
 }
 

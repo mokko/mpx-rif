@@ -1,15 +1,16 @@
 package MPX::RIF::Helper;
 {
-  $MPX::RIF::Helper::VERSION = '0.024';
+  $MPX::RIF::Helper::VERSION = '0.025';
 }
-
-# ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
-
+use strict;
+use warnings;
 use Exporter;
 use Log::Handler;
 
-@ISA       = qw(Exporter);
-@EXPORT_OK = qw(debug log);
+# ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
+
+our @ISA       = qw(Exporter);
+our @EXPORT_OK = qw(debug log);
 
 our $debug = 0;
 our $log   = init_log();    #will store the logger object
@@ -90,7 +91,7 @@ MPX::RIF::Helper - - For stuff that I want to inherit from elsewhere in MPX::RIF
 
 =head1 VERSION
 
-version 0.024
+version 0.025
 
 =head1 SYNOPSIS
 

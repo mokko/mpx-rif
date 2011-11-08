@@ -1,6 +1,6 @@
 package MPX::RIF::MIMO;
 {
-  $MPX::RIF::MIMO::VERSION = '0.024';
+  $MPX::RIF::MIMO::VERSION = '0.025';
 }
 
 # ABSTRACT: MIMO specific logic
@@ -132,7 +132,13 @@ sub identNr {
 	       		[_|\s|\.]
 #5th element: a
 			(?:
-	        ([a-z]-[b-z]|[a-z],[b-z]|[a-z]+[b-z]|[a-z]{1,2})
+	        ([a-z]{1,2}|
+	         [a-z]{1,2}-[a-z]{1,2}|
+
+	         [a-z],[b-z]|
+	         [a-z],[b-z],[c-z]|
+
+	        [a-z]+[b-z]|)
 				#separator only if there is a 4th element
 	       		[_|\s|\.]||)
 #6th element: <1>
@@ -422,7 +428,7 @@ MPX::RIF::MIMO - MIMO specific logic
 
 =head1 VERSION
 
-version 0.024
+version 0.025
 
 =head1 DESCRIPTION
 

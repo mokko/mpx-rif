@@ -9,6 +9,7 @@ use Pod::Usage;
 use Getopt::Std;
 use YAML::XS qw(LoadFile);
 use File::Spec;
+use Carp qw(croak);
 
 #binmode(STDOUT, ":utf8"); then output in mintty is not scrambled anymore, but files
 #created with "xpath.pl ... > test.xml" don't open correctly in xemacs
@@ -26,22 +27,18 @@ pod2usage() if ( $opts->{h} );
 
 commandLineSanity($opts);
 
-my $xpc = initNS($opts);
+#use App::Xpath qw(debug);
+#my $app= App::Xpath ($opts)
+#$app->initNS();
+#$app->query($doc, $xpath)
 
 my $doc = XML::LibXML->load_xml( location => $opts->{f} )
   or die "Problems loading xml from file ($opts->{f})";
-
 my $xpath = prepareXpath($opts);
+my $xpc   = initNS($opts);
+query( $doc, $xpath, $xpc );
 
-# Do the actual query
-if ($xpc) {
-	contextQuery( $xpc, $xpath, $doc );
-}
-else {
-	query( $doc, $xpath );
-}
-
-exit;
+exit 0;
 
 ##
 ## SUBs
@@ -68,14 +65,21 @@ sub prepareXpath {
 }
 
 
-sub contextQuery {
-	my $xpc   = shift or die "Need xpc";
-	my $xpath = shift or die "Need xpath";
+sub query {
 	my $doc   = shift or die "Need doc";
+	my $xpath = shift or die "Need xpath";
+	my $xpc   = shift;
 
-	my $object = $xpc->find( $xpath, $doc );
-	output($object);
+	if ( ref $doc ne 'XML::LibXML::Document' ) {
+		carp("Error: doc is not XML::LibXML::Document");
+	}
 
+	if ( ref $xpc eq 'XML::LibXML::XPathContext' ) {
+		output( $xpc->find( $xpath, $doc ) );
+		return;
+	}
+	output( $doc->find($xpath) );
+	return;
 }
 
 
@@ -83,9 +87,10 @@ sub output {
 	my $object = shift;
 
 	if ( !$object ) {
-		debug "no results\n";
+		debug "no results\n"; #currently outputs nothing if no result and no -d
 		return;
 	}
+
 	debug 'Response object type: ' . ref $object;
 	if ( ref $object ne 'XML::LibXML::NodeList' ) {
 		print $object;
@@ -96,15 +101,6 @@ sub output {
 		}
 	}
 	print "\n";
-}
-
-
-sub query {
-	my $xpath = shift or die "Need xpath";
-	my $doc   = shift or die "Need doc";
-
-	my $object = $doc->find($xpath);
-	output($object);
 }
 
 
@@ -186,7 +182,7 @@ xpath.pl - query xml files via command line xpath
 
 =head1 VERSION
 
-version 0.024
+version 0.025
 
 =head1 SYNOPSIS
 
@@ -234,21 +230,18 @@ this within a few hours.
 
 Expects hashref, returns compiled xpath expression. Dies on compile errors.
 
-=head2 contextQuery ($xpc, xpath,$doc);
+=head2 query ($doc, $xpath, $xpc);
 
-Feeds result to output which prints to STDOUT
-Analog to query.
+Expects LibXML document, an xpath expression (precompiled or as string) and 
+optionally xpathContextObject (carrying the info on a registered namespace).
+
+Feeds return value to  function output().
+
+TODO: test for xpath object.
 
 =head2 output ($object);
 
 Expects a LibXML obkject. Prints to STDOUT. Returns empty if no result.
-
-=head2 query ($xpath, $doc);
-
-Expects xpath expression (precompiled or as string) and LibXML document. 
-Feeds return value to  function output().
-
-TODO: test for xpath object.
 
 =head2 my $xpc=initNS($opts);
 

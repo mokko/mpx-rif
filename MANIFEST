@@ -18,11 +18,8 @@ lib/MPX/RIF/MIMO.pm
 lib/MPX/RIF/Resource.pm
 t/00-load.t
 t/10-IdentNrParser.t
+t/11-IdentNrParser.t
 t/20-Helper.t
-t/author-critic.t
-t/boilerplate.t
-t/manifest.t
-t/pod.t
 t/release-pod-syntax.t
 t/release-test-version.t
 weaver.ini

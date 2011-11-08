@@ -1,39 +1,43 @@
 Revision history for MPX-RIF
+0.024- 2011-11-08
+	new test for IdentNrParser
+	xpath.pl refactored, config now in ~.xpathrc.yml
+	count.xsl revamped
 0.024- 2011-11-07
 	xpath.pl has better output
 	xpath.pl now takes advanced configuration from ~/.xpathrc.yml	
 	mpx-rif.pl: now creates multimediaobjekt/@typ if constant typ is defined in config/eg.yml
 0.023- 2011-11-05
-       	xslt2.0 script to count fotographs and their metadata records
+	xslt2.0 script to count fotographs and their metadata records
 0.022- 2011-11-05
-       	little xpath tool for Andreas
+    little xpath tool for Andreas
 0.021- 2011-11-01
-		flickschuster.pl angefangen; 
-		IdentNr parser changed specification again; 
-		perldoc format changes
+	flickschuster.pl angefangen; 
+	IdentNr parser changed specification again; 
+	perldoc format changes
 0.020- 2011-10-29
-        mpx-rif: fix bug which wrote complex string instead objId in 
-        verknuepftes Objekt
+    mpx-rif: fix bug which wrote complex string instead objId in 
+    verknuepftes Objekt
 0.019- 2011-10-29
-        mpx-rif: IdentNr parser returned error value 1
+    mpx-rif: IdentNr parser returned error value 1
 0.018- 2011-10-28
-        mpx-rif: IdentNr parser Nls problem. No merky, but works
-        mpx-rif: objId lookup: in case of ambiguous IdentNr, take lastest
-        export.
+    mpx-rif: IdentNr parser Nls problem. No merky, but works
+    mpx-rif: objId lookup: in case of ambiguous IdentNr, take lastest
+    export.
 0.017- 2011-08-29
-		resmvr: refactoring, convert tif to jpg, introduce counter counting 
-		items copied and renamed	
+	resmvr: refactoring, convert tif to jpg, introduce counter counting 
+	items copied and renamed	
 0.016- 2011-08-26
-		mpx-rif.pl - correct identNr Parser for Dlg
+	mpx-rif.pl - correct identNr Parser for Dlg
 0.015- 2011-08-26
-        mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
-        This time it was that Unternummern were not excluded.
+    mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
+    This time it was that Unternummern were not excluded.
 0.014- 2011-08-26
-        mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
+    mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
 0.013- 2011-08-26
-        mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
+    mpx-rif.pl - Problem with lookup objId fixed (complicated xpath)
 0.012- 2011-08-26
-        MIMO-resmvr.pl - now checks @freigabe=/Web|web/'
+    MIMO-resmvr.pl - now checks @freigabe=/Web|web/'
 0.011- 2011-08-10
 	rename-images.pl - has -x option to switch on actual moving versus
 	just showing what would be moved.
@@ -76,14 +80,14 @@ Revision history for MPX-RIF
 0.05	remove unnecessary files from release
 
 0.04	same identNr were not always recognized, hence objIds were not
-        identifier where they should have been. Now fixed.
+    identifier where they should have been. Now fixed.
 	Now harvester and unwrapper included.
 	-n command-line option to switch off harvesting
 	moved documentation into mpx-rif.pl
 
 0.03    2011-07
-        now downsizes pictures automatically when to big and warns when
-        to small.
+    now downsizes pictures automatically when to big and warns when
+    to small.
 
 
 

@@ -629,6 +629,7 @@ sub writeXML {
 
 		#new mulId now with number dependent file suffix
 		my $typ = $self->{data}->{$id}->get('typ');
+		delete $self->{data}->{$id}->{typ};
 		my $objId  = $self->{data}->{$id}->get('verknüpftesObjekt');
 		my $pref   = $self->{data}->{$id}->get('pref');
 		my $suffix = $self->{data}->{$id}->get('multimediaErweiterung');

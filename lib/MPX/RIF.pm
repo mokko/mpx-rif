@@ -1,6 +1,6 @@
 package MPX::RIF;
 {
-  $MPX::RIF::VERSION = '0.025';
+  $MPX::RIF::VERSION = '0.026';
 }
 
 # ABSTRACT: build cheap mpx from filenames etc.
@@ -499,6 +499,7 @@ sub writeXML {
 
 		#new mulId now with number dependent file suffix
 		my $typ = $self->{data}->{$id}->get('typ');
+		delete $self->{data}->{$id}->{typ};
 		my $objId  = $self->{data}->{$id}->get('verknüpftesObjekt');
 		my $pref   = $self->{data}->{$id}->get('pref');
 		my $suffix = $self->{data}->{$id}->get('multimediaErweiterung');
@@ -1007,7 +1008,7 @@ MPX::RIF - build cheap mpx from filenames etc.
 
 =head1 VERSION
 
-version 0.025
+version 0.026
 
 =head1 SYNOPSIS
 

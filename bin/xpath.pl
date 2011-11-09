@@ -182,7 +182,7 @@ xpath.pl - query xml files via command line xpath
 
 =head1 VERSION
 
-version 0.025
+version 0.026
 
 =head1 SYNOPSIS
 

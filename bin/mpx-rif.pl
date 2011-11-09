@@ -91,7 +91,7 @@ mpx-rif.pl - command line frontend for MPX::RIF
 
 =head1 VERSION
 
-version 0.025
+version 0.026
 
 =head2 SYNOPSIS
 

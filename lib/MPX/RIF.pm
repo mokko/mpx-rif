@@ -178,6 +178,25 @@ sub lookupObjId {
 
 }
 
+sub upPref {
+	my $path = shift or return;
+	$path =~ / -([A-Z]+) /;
+	if ($1) {
+		my $pref = $1;
+
+		#quick and dirty: works only for 1-char preferences
+		if ( ( length $pref ) > 1 ) {
+			return;
+		}
+		my $newpref = chr( ( ord $pref ) + 1 );
+
+		#debug "pref: $pref->$newpref";
+		my $newpath = $path;
+		$newpath =~ s/ -([A-Z]+) / -$newpref /;
+		return $newpath;
+	}
+}
+
 =method $faker->$filter;
 
 4th step. Drops resources from store if they don't have specified keys.
@@ -188,7 +207,7 @@ a new step
 
 sub filter {
 	my $self       = shift;
-	my @obligatory = qw(verknüpftesObjekt);
+	my @obligatory = qw(verknüpftesObjekt mulId);
 	my %unique;
 
 	debug "Enter filter. Also test if mulId is unique";
@@ -198,7 +217,18 @@ sub filter {
 		my $resource = $self->_getResource($id);
 		if ( my $mulId = $resource->get('mulId') ) {
 			if ( ++$unique{$mulId} > 1 ) {
-				my $msg = "mulId $mulId is not unique!";
+
+				#quick and dirty file mover.
+				#I better deactivate it before I continue.
+
+				my $msg     = "$id -- mulId $mulId is not unique!";
+				my $newpath;
+				#$newpath = $self->filemover($id);
+				
+				if ($newpath) {
+					$msg .= "\nmv $id $newpath";
+				}
+
 				debug $msg;
 				log $msg;
 				$err++;
@@ -227,11 +257,47 @@ sub filter {
 	$self->_dumpStore( $temp->{4} );
 
 	if ( $err > 0 ) {
-		print "not all mulIds are unique! Check log for more details!\n";
-		exit 1;
+		log uc ("Not all mulIds are unique!");
+		#exit 1;
 	}
 
 	$self->stop(4);
+}
+
+=method my $newpath=$self->filemover ($oldpath);
+
+primitive filemover to eliminate non-unique mulIds. Use at own risk!
+
+=cut
+
+sub filemover {
+	my $self = shift or die "need myself";
+	my $path = shift or die "need path";
+
+	#upPref can fail, e.g. for -AA
+	my $newpath = upPref($path);
+
+	if ( !$newpath ) {
+		return;
+	}
+	while ( $self->{data}->{$newpath} ) {
+
+		#debug "exists already: $newpath";
+		$newpath = upPref($newpath);
+	}
+
+	if ( !$newpath ) {
+		return;
+	}
+
+	#add new resource
+	my $newResource = MPX::RIF::Resource->new( id => $newpath );
+	$self->_storeResource($newResource);
+
+	#rm current resource
+	delete $self->{data}->{$path};
+
+	return $newpath;
 }
 
 =head2 my $objId=$self->_lookupObjId;

@@ -2,7 +2,7 @@ NAME
     MPX::RIF - build cheap mpx from filenames etc.
 
 VERSION
-    version 0.026
+    version 0.027
 
 SYNOPSIS
     Read a yaml config file, parse a directory, extract information from
@@ -57,6 +57,9 @@ METHODS
     4th step. Drops resources from store if they don't have specified keys.
 
     a new step
+
+  my $newpath=$self->filemover ($oldpath);
+    primitive filemover to eliminate non-unique mulIds. Use at own risk!
 
   $faker->parsedir
     Second step.

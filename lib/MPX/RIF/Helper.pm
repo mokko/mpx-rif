@@ -1,6 +1,6 @@
 package MPX::RIF::Helper;
 {
-  $MPX::RIF::Helper::VERSION = '0.026';
+  $MPX::RIF::Helper::VERSION = '0.027';
 }
 use strict;
 use warnings;
@@ -10,7 +10,7 @@ use Log::Handler;
 # ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
 
 our @ISA       = qw(Exporter);
-our @EXPORT_OK = qw(debug log);
+our @EXPORT_OK = qw(debug log str2num);
 
 our $debug = 0;
 our $log   = init_log();    #will store the logger object
@@ -81,6 +81,89 @@ sub unlink_log {
 	}
 
 }
+
+
+
+sub str2num {
+	my $string=shift or return;
+	my $no=0;
+	
+	#e.g. aa
+	for ( my $i = 0 ; $i < length $string ; $i++ ) {
+		#m is the position of the digit. The last digit is 1, the 3rd digit is 3
+		my $m=(length $string)-$i;		
+		#n is the value of the respective digit
+		my $n=alpha2num( substr $string, $i, 1 );
+		#aa:1*26+1: 26n+n
+		#ab:1*26+2: 26n+n
+		#bb:2*26+2: 26n+n
+		#aaa:26*26*1+26*1+1: 26*26n+26n+n: 26**2n+26**1n+26**0n
+		$no=26**($m-1)*$n+$no;
+	}
+	return $no;
+}
+
+sub _str2num {
+	my $string=shift or return;
+	my $no;
+	
+	for ( my $i = 0 ; $i < length $string ; $i++ ) {
+		$no .=
+		  sprintf( "%02d", alpha2num( substr $string, $i, 1 ) );
+	}
+	return $no;
+}
+
+
+sub alpha2num {
+	my $in = shift || return;
+
+	$in = uc($in);
+
+	#debug "ALPHA2NUM: $in";
+
+	my %tr = (
+		A => 1,
+		B => 2,
+		C => 3,
+		D => 4,
+		E => 5,
+		F => 6,
+		G => 7,
+		H => 8,
+		I => 9,
+		J => 10,
+		K => 11,
+		L => 12,
+		M => 13,
+		N => 14,
+		O => 15,
+		P => 16,
+		Q => 17,
+		R => 18,
+		S => 19,
+		T => 20,
+		U => 21,
+		V => 22,
+		W => 23,
+		X => 24,
+		Y => 25,
+		Z => 26,
+	);
+
+	if ( $in =~ /\d/ ) {
+		return $in;
+	}
+
+	if ( $tr{$in} ) {
+		return $tr{$in};
+	}
+
+	warn "alpha2num error $in";
+}
+
+
+
 1;
 __END__
 =pod
@@ -91,7 +174,7 @@ MPX::RIF::Helper - - For stuff that I want to inherit from elsewhere in MPX::RIF
 
 =head1 VERSION
 
-version 0.026
+version 0.027
 
 =head1 SYNOPSIS
 
@@ -126,6 +209,16 @@ is not valid.
 =head2 unlink_log ($logfile);
 
 Deletes logfile, e.g. before init. Returns success on success.
+
+=head1 FUNCTIONS
+
+=head2 my $num=string2num ($string);
+	Simple translation of A to 1, B to 2 etc. for strings consisting of multiple letters.
+
+	Actually it returns as a string consisting of digits, could be 0101. 
+
+=head2 my $num=alpha2num ($alpha);
+	Simple translation of A to 1, B to 2 etc.
 
 =head1 AUTHOR
 

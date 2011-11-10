@@ -1,13 +1,14 @@
 package MPX::RIF::Resource;
 {
-  $MPX::RIF::Resource::VERSION = '0.026';
+  $MPX::RIF::Resource::VERSION = '0.027';
 }
+
 # ABSTRACT: deal with resources and features
 use Carp qw/carp croak/;
 use strict;
 use warnings;
-use MPX::RIF::Helper qw(debug log);
-MPX::RIF::Helper::init_log ();
+use MPX::RIF::Helper qw(debug log str2num);
+MPX::RIF::Helper::init_log();
 
 
 sub new {
@@ -107,10 +108,12 @@ sub path2mpx {
 	if ( !$path ) {
 		croak "No feature with name $feat!";
 	}
+
 	#delete $resource->{$feat};
 
 	#I will likely have cygpaths, so I need some kind of conversion
 	$path = cygpath($path);
+
 	#debug "path2mpx: $path";
 
 	#i wonder if I should do it alone or if I should use a module
@@ -138,9 +141,10 @@ sub rmFeat {
 	my $resource = shift;    #function or method?
 	my $feat     = shift;
 
-	if ($resource->{$feat}) {
+	if ( $resource->{$feat} ) {
 		delete $resource->{$feat};
-	} else {
+	}
+	else {
 		return ();
 	}
 }
@@ -155,7 +159,8 @@ sub cygpath {
 		$win_path =~ s/\s+$//;
 		return $win_path;
 
-	} else {
+	}
+	else {
 
 		#catches error which breaks execution
 		warn "Warning: cygpath called without param";
@@ -173,7 +178,7 @@ MPX::RIF::Resource - deal with resources and features
 
 =head1 VERSION
 
-version 0.026
+version 0.027
 
 =head1 SYNOPSIS
 
@@ -230,6 +235,8 @@ Getter that returns features for a given resource as array:
 =head2 $resource->rmFeat ($feat);
 
 Delete a feature, expects feature name.
+
+=head1 FUNCTIONS
 
 =head2 my $winpath=cygpath($nixPath);
 

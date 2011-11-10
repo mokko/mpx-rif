@@ -1,4 +1,7 @@
 Revision history for MPX-RIF
+0.027- 2011-11-10
+	change mulId generation to ensure uniqueness;test mulId uniqueness during 4-filter
+	also added a deactivated "filemover" to speed up the moving of files, very quick and dirty
 0.026- 2011-11-09
 	prevent typ from showing up twice (as an element and attribute)
 0.025- 2011-11-08

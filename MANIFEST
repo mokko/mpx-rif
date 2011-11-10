@@ -22,7 +22,6 @@ t/11-IdentNrParser.t
 t/20-Helper.t
 t/release-pod-syntax.t
 t/release-test-version.t
-weaver.ini
 xsd/mpx.xsd
 xsl/count.xsl
 xsl/countFotografen2.0.xsl

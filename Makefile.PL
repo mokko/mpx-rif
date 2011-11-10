@@ -48,7 +48,6 @@ my %WriteMakefileArgs = (
     "Pod::Usage" => 0,
     "SOAP::DateTime" => 0,
     "Time::HiRes" => 0,
-    "UTF8" => 0,
     "XML::LibXML" => 0,
     "XML::LibXSLT" => 0,
     "XML::Writer" => 0,
@@ -58,7 +57,7 @@ my %WriteMakefileArgs = (
     "utf8" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.026",
+  "VERSION" => "0.027",
   "test" => {
     "TESTS" => "t/*.t"
   }

@@ -472,10 +472,11 @@ sub mkMulId {
 
 	my $part;
 	my @parts = split ' ', $identNr;
-	if ( $parts[3] ) {
-		$parts[3] =~ s/\W//;
+	#4th element can be <2>
+	if ( $parts[3] && $parts[3] !~ /<\d>/) {
+		$parts[3] =~ s/\W//g;
+		#debug "SHSSSSSSSSSSSSSSSSSS::::::".$parts[3];
 		$part = str2num( $parts[3] );
-
 	}
 	else {
 		$part = '0';
@@ -487,7 +488,7 @@ sub mkMulId {
 	  . str2num($suffix)
 	  . $pref;
 
-	debug " mulId : $mulId ";
+	#debug " mulId : $mulId ";
 	$resource->addFeatures('mulId'=>$mulId);
 	return $mulId;
 }

@@ -193,11 +193,15 @@ sub filter {
 
 	debug "Enter filter. Also test if mulId is unique";
 
+	my $err = 0;
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
 		if ( my $mulId = $resource->get('mulId') ) {
 			if ( ++$unique{$mulId} > 1 ) {
-				die "mulId is not unique!";
+				my $msg = "mulId $mulId is not unique!";
+				debug $msg;
+				log $msg;
+				$err++;
 			}
 		}
 
@@ -221,6 +225,12 @@ sub filter {
 		}
 	}
 	$self->_dumpStore( $temp->{4} );
+
+	if ( $err > 0 ) {
+		print "not all mulIds are unique! Check log for more details!\n";
+		exit 1;
+	}
+
 	$self->stop(4);
 }
 

@@ -163,14 +163,15 @@ sub lookupObjId {
 
 			#debug "lookup $identNr";
 			#take out the identNr, not needed anymore!
-			delete $resource->{identNr};
 
 			if ($objId) {
 				$resource->addFeatures( 'verknüpftesObjekt' => $objId );
+				MPX::RIF::MIMO::mkMulId($resource);
 			}
 
 		}
 		$self->_storeResource($resource);
+
 	}
 	$self->_dumpStore( $temp->{3} );
 	$self->stop(3);
@@ -188,13 +189,17 @@ a new step
 sub filter {
 	my $self       = shift;
 	my @obligatory = qw(verknüpftesObjekt);
+	my %unique;
 
-	debug "Enter filter";
+	debug "Enter filter. Also test if mulId is unique";
 
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
-
-		#debug "filter:$id";
+		if ( my $mulId = $resource->get('mulId') ) {
+			if ( ++$unique{$mulId} > 1 ) {
+				die "mulId is not unique!";
+			}
+		}
 
 		my $ok = 1;
 		foreach my $feat (@obligatory) {
@@ -557,8 +562,7 @@ sub validate {
 
 			#results contains multiple nodes
 			my $msg     = "mulId $mulId not unique!";
-			my @results =
-			  $xpc->findnodes(
+			my @results = $xpc->findnodes(
 				"/mpx:museumPlusExport/mpx:multimediaobjekt[\@mulId = $mulId]");
 			foreach (@results) {
 				$_ = registerNS($_);
@@ -628,66 +632,58 @@ sub writeXML {
 		my $now  = ConvertDate( ParseDateString("epoch $time") );
 
 		#new mulId now with number dependent file suffix
-		my $typ = $self->{data}->{$id}->get('typ');
-		delete $self->{data}->{$id}->{typ};
-		my $objId  = $self->{data}->{$id}->get('verknüpftesObjekt');
-		my $pref   = $self->{data}->{$id}->get('pref');
-		my $suffix = $self->{data}->{$id}->get('multimediaErweiterung');
-		$suffix =
-		    sprintf( "%02d", MPX::RIF::MIMO::alpha2num( substr $suffix, 0, 1 ) )
-		  . sprintf( "%02d", MPX::RIF::MIMO::alpha2num( substr $suffix, 1, 1 ) )
-		  . sprintf( "%02d",
-			MPX::RIF::MIMO::alpha2num( substr $suffix, 2, 1 ) );
+		my $typ = $resource->get('typ');
+		$resource->rmFeat('typ');
 
-		#debug "SSSSSSSSSSSSSSSSSuffix: " . $suffix;
+		my $mulId = $resource->get('mulId');
+		$resource->rmFeat('mulId');
+		$resource->rmFeat('identNr');
 
-		#current mpx required mulID to be an integer
-		my $mulId;
-		if ( $objId && $pref ) {
-			$mulId = $objId . $suffix . $pref;
-
-			#debug "NEW mulId $mulId";
-
-			my %attributes = (
-				'exportdatum' => $now,
-				'mulId'       => $mulId,
-				'quelle'      => 'mpx-rif',
-			);
-
-			#Typ is optional
-			if ($typ) {
-				$attributes{typ}=$typ
-			}
-
-
-			#my $pref=$resource->get('pref');
-			if ( my $pref = $resource->get('pref') ) {
-				$attributes{'priorität'} = $pref;
-				delete $self->{data}->{$id}->{pref};
-			}
-
-			#my $freigabe=$resource->get('freigabe');
-			if ( my $freigabe = $resource->get('freigabe') ) {
-				$attributes{'freigabe'} = $freigabe;
-				delete $self->{data}->{$id}->{freigabe};
-			}
-			$i++;
-			$writer->startTag( 'multimediaobjekt', %attributes );
-
-			#this should be elsewhereş
-			#$resource->path2mpx('id');
-			$resource->rmFeat('id');
-
-			#delete $resource->{id};
-
-			foreach my $feat ( $resource->loopFeatures ) {
-				my $value = $resource->get($feat);
-				$writer->dataElement( $feat, $value );
-			}
-			$writer->endTag('multimediaobjekt');
+		if ( !$mulId ) {
+			die "mulId does not exist";
 		}
-	}
 
+		#debug "NEW mulId $mulId";
+
+		my %attributes = (
+			'exportdatum' => $now,
+			'mulId'       => $mulId,
+			'quelle'      => 'mpx-rif',
+		);
+
+		#Typ is optional
+		if ($typ) {
+			$attributes{typ} = $typ;
+		}
+
+		#my $pref=$resource->get('pref');
+		if ( my $pref = $resource->get('pref') ) {
+			$attributes{'priorität'} = $pref;
+			$resource->rmFeat('pref');
+		}
+
+		#my $freigabe=$resource->get('freigabe');
+		if ( my $freigabe = $resource->get('freigabe') ) {
+			$attributes{'freigabe'} = $freigabe;
+			$resource->rmFeat('freigabe');
+
+			#delete $self->{data}->{$id}->{freigabe};
+		}
+		$i++;
+		$writer->startTag( 'multimediaobjekt', %attributes );
+
+		#this should be elsewhereş
+		#$resource->path2mpx('id');
+		$resource->rmFeat('id');
+
+		#delete $resource->{id};
+
+		foreach my $feat ( $resource->loopFeatures ) {
+			my $value = $resource->get($feat);
+			$writer->dataElement( $feat, $value );
+		}
+		$writer->endTag('multimediaobjekt');
+	}
 	$writer->endTag('museumPlusExport');
 	$writer->end();
 
@@ -1071,7 +1067,7 @@ sub _getResource {
 }
 
 sub _harvest {
-	my $self   = shift or return;
+	my $self = shift or return;
 	my $mpx_fn = $self->{lookup};
 
 	if ( $self->{NOHARVEST} ) {
@@ -1122,8 +1118,7 @@ sub _unwrapAndWrite {
 
 sub _unwrap {
 	my $dom = shift or die "Need response";
-	my $unwrapFN =
-	  realpath(
+	my $unwrapFN = realpath(
 		File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
 	if ( !-f $unwrapFN ) {
 		die "$unwrapFN not cound. Check bin../xsl/unwrap.xsl";
@@ -1144,6 +1139,7 @@ sub _unwrap {
 sub flickschuster {
 	my $self = shift or die "Internal Error: Object missing!";
 	MPX::RIF::Helper::init_debug();
+
 	#loads 1-scandir.yml
 	$self->_loadStore( $temp->{1} );
 
@@ -1157,24 +1153,25 @@ sub flickschuster {
 	}
 
 	#debug Dumper $self;
-	
 
 	foreach my $id ( $self->_resourceIds ) {
 		my $resource = $self->_getResource($id);
-		$resource=MPX::RIF::MIMO::parsedir ($resource);
+		$resource = MPX::RIF::MIMO::parsedir($resource);
 		my $identNr = $resource->get('identNr');
-		my $objId = $self->_lookupObjId($identNr);
-		if (!$objId) {
-			#cases identNr can be 
+		my $objId   = $self->_lookupObjId($identNr);
+		if ( !$objId ) {
+
+			#cases identNr can be
 			#whole in A notation ... VII c 123
 			#whole in B notation or ... VII c 123 a,b
 			#a part ... VII c 123 a
 
-			debug "No objId obtained as exact match, assume this a whole in A notation and look for parts"
+			debug
+"No objId obtained as exact match, assume this a whole in A notation and look for parts";
 		}
 		debug "resource-identNr $identNr";
 	}
 
 }
 
-1;                       # End of MPX::RIF
+1;    # End of MPX::RIF

@@ -1,10 +1,11 @@
 package MPX::RIF::Resource;
+
 # ABSTRACT: deal with resources and features
 use Carp qw/carp croak/;
 use strict;
 use warnings;
-use MPX::RIF::Helper qw(debug log);
-MPX::RIF::Helper::init_log ();
+use MPX::RIF::Helper qw(debug log str2num);
+MPX::RIF::Helper::init_log();
 
 =head1 NAME
 
@@ -183,10 +184,12 @@ sub path2mpx {
 	if ( !$path ) {
 		croak "No feature with name $feat!";
 	}
+
 	#delete $resource->{$feat};
 
 	#I will likely have cygpaths, so I need some kind of conversion
 	$path = cygpath($path);
+
 	#debug "path2mpx: $path";
 
 	#i wonder if I should do it alone or if I should use a module
@@ -219,14 +222,15 @@ sub rmFeat {
 	my $resource = shift;    #function or method?
 	my $feat     = shift;
 
-	if ($resource->{$feat}) {
+	if ( $resource->{$feat} ) {
 		delete $resource->{$feat};
-	} else {
+	}
+	else {
 		return ();
 	}
 }
 
-=head2 my $winpath=cygpath($nixPath);
+=func my $winpath=cygpath($nixPath);
 
 Quick and very dirty.
 
@@ -241,7 +245,8 @@ sub cygpath {
 		$win_path =~ s/\s+$//;
 		return $win_path;
 
-	} else {
+	}
+	else {
 
 		#catches error which breaks execution
 		warn "Warning: cygpath called without param";

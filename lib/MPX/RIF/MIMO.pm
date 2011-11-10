@@ -5,11 +5,10 @@ use strict;
 use warnings;
 use FindBin;
 use File::Spec;
-use UTF8;
+use utf8;
 use Carp qw/carp croak/;
-
 #use lib "$FindBin::Bin/../../lib"; #?
-use MPX::RIF::Helper qw(debug log);
+use MPX::RIF::Helper qw(debug log str2num);
 use MPX::RIF::Resource;
 use Encode qw(from_to decode);
 
@@ -354,11 +353,11 @@ sub pref {
 	my $file = shift;
 	my $pref;
 
-	if ( $file =~ /-([A-Z]).*\.\w+$/ ) {
+	if ( $file =~ /-([A-Z]+).*\.\w+$/ ) {
 		$pref = $1;
 
 		#debug " letter : $1 ";
-		$pref = alpha2num($pref);
+		$pref = str2num($pref);
 		debug " +pref $pref";
 		if ( $pref !~ /\d+/ ) {
 			my $msg = "pref is not numeric '$pref' ($file)";
@@ -436,55 +435,62 @@ sub cyg2win {
 	}
 }
 
-=func my $num=alpha2num ($alpha);
-	Simple translation of A to 1, B to 2 etc.
+=func my $mulId=mkMulId ($resource);
+
+Create the mulId based on the info already present in $resource. Expects a
+resource object and returns the new mulId. Also saves the mulId in the 
+$resource.
+
+Currently, mulId is created to be a unique integer from various parts. Those
+which are strings are transformed to digits somehow along the way.
+
+There is no way to get back the components back from the number. However,
+the mulId should stay the same over various runs of mpx-rif
+
+mulId is composed like this: "$objId$part$suffix$pref" where
+
+$suffix is mpx:multimediaErweiterung
+$part is the 3rd part of IdentNr describing parts of an object (or 0 if identNr has no such part)
+$pref is the preference for priorität
+
 =cut
 
-sub alpha2num {
-	my $in = shift || return;
+sub mkMulId {
+	my $resource = shift or die "no resource!";
+	my $objId    = $resource->get('verknüpftesObjekt') or return;
+	my $pref     = $resource->get('pref') or die "Can't create mulId";
+	my $suffix   = $resource->get('multimediaErweiterung')
+	  or die "Can't create mulId";
+	my $identNr = $resource->get('identNr')
+	  or die "Can't create mulId";
 
-	$in = uc($in);
+	#it is perfectly possible that verknüpftesObjekt doesn't exist,
+	#but in that case we can't make a mulId so we return empty handed
+	#we assume that we always have pref and multimediaErweiterung
 
-	#debug "ALPHA2NUM: $in";
+	#parts from same object can have identical objId, but we need unique mulIds
 
-	my %tr = (
-		A => 1,
-		B => 2,
-		C => 3,
-		D => 4,
-		E => 5,
-		F => 6,
-		G => 7,
-		H => 8,
-		I => 9,
-		J => 10,
-		K => 11,
-		L => 12,
-		M => 13,
-		N => 14,
-		O => 15,
-		P => 16,
-		Q => 17,
-		R => 18,
-		S => 19,
-		T => 20,
-		U => 21,
-		V => 22,
-		W => 23,
-		X => 24,
-		Y => 25,
-		Z => 26,
-	);
+	my $part;
+	my @parts = split ' ', $identNr;
+	if ( $parts[3] ) {
+		$parts[3] =~ s/\W//;
+		$part = str2num( $parts[3] );
 
-	if ( $in =~ /\d/ ) {
-		return $in;
+	}
+	else {
+		$part = '0';
 	}
 
-	if ( $tr{$in} ) {
-		return $tr{$in};
-	}
+	my $mulId =
+	    $objId
+	  . $part
+	  . str2num($suffix)
+	  . $pref;
 
-	warn "alpha2num error $in";
+	debug " mulId : $mulId ";
+	$resource->addFeatures('mulId'=>$mulId);
+	return $mulId;
 }
+
 
 1;

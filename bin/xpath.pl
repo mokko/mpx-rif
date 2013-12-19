@@ -22,9 +22,9 @@ pod2usage() if ( $opts->{h} );
 
 =head1 SYNOPSIS
 
-xpath.pl -f file.xml "//xpath"
-xpath.pl -n mpx -f file.xml "//mpx:xpath"
-xpath.pl -h
+	xpath.pl -f file.xml "//xpath"
+	xpath.pl -n mpx -f file.xml "//mpx:xpath"
+	xpath.pl -h
 
 (Quotes are a matter of your shell.)
 
@@ -140,7 +140,7 @@ sub query {
 
 =func output ($object);
 
-Expects a LibXML obkject. Prints to STDOUT. Returns empty if no result.
+Expects a LibXML object. Prints to STDOUT. Returns empty if no result.
 
 =cut
 

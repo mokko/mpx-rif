@@ -8,16 +8,19 @@ use XML::LibXML;
 use Pod::Usage;
 use Getopt::Std;
 use YAML::XS qw(LoadFile);
-use File::Spec;
+use Path::Class;
 use Carp qw(croak);
+use MPX::RIF::Helper qw(error debug); #might require perl -I lib ...
 
 #binmode(STDOUT, ":utf8"); then output in mintty is not scrambled anymore, but files
 #created with "xpath.pl ... > test.xml" don't open correctly in xemacs
 #I guess it's better to have display scrambled than files
 
-sub debug;
-
 getopts( 'df:hn:s:v', my $opts = {} );
+MPX::RIF::Helper::init_debug() if ( $opts->{v} or $opts->{d} );
+$opts->{config}{namespaces}{mpx}='http://www.mpx.org/mpx';
+$opts->{config}{namespaces}{oai}='http://www.openarchives.org/OAI/2.0/';
+
 pod2usage() if ( $opts->{h} );
 
 =head1 SYNOPSIS
@@ -40,6 +43,8 @@ this text
 
 Provide a prefix. Prefix has to be associated with namespace uri somehwere. 
 Currently inside this file. todo.
+
+TODO: Provide mutliple prefixes separated by comma
 
 =item -v verbose - be more verbose
 
@@ -176,6 +181,7 @@ sub initNS {
 	my $uri;
 
 	#prefix either comes from command line or from yml-config
+	#is n repeatable? currently not. Seems to be a limitation of getopt::std
 	if ( $opts->{n} ) {
 		$prefix = $opts->{n};
 	}
@@ -189,16 +195,15 @@ sub initNS {
 		return;
 	}
 
-	$uri = $opts->{config}->{namespaces}->{$prefix};
+	$uri = $opts->{config}->{namespaces}->{$prefix}; 
 
-	if ( !$uri ) {
-		print "Error: namespace uri not found!\n";
-		exit 1;
-	}
+	error 'namespace uri not found' if !$uri;
 
 	my $xpc = XML::LibXML::XPathContext->new();
 	$xpc->registerNs( $prefix, $uri );
-	debug "Register namespace $prefix:$uri";
+	debug "Register namespace $prefix: $uri";
+	debug "Register namespace oai: http://www.openarchives.org/OAI/2.0/";
+	$xpc->registerNs('oai', 'http://www.openarchives.org/OAI/2.0/');
 
 	return $xpc;
 }
@@ -213,7 +218,7 @@ Process options and arguments.
 
 sub commandLineSanity {
 	my $opts = shift or die "Need opts";
-	my $file = File::Spec->catfile( $ENV{HOME}, '.xpathrc.yml' );
+	my $file = file ( $ENV{HOME}, '.xpathrc.yml' );
 	debug "Debug/verbose mode on";
 	debug "Looking for config in file:$file";
 
@@ -238,15 +243,3 @@ sub commandLineSanity {
 	}
 }
 
-=func debug "$msg";
-
-print message to standard output.
-
-=cut
-
-sub debug {
-	my $msg = shift;
-	if ( $opts->{v} ) {
-		print ' ' . $msg . "\n";
-	}
-}

@@ -4,10 +4,10 @@ use warnings;
 use Exporter;
 use Log::Handler;
 
-# ABSTRACT: - For stuff that I want to inherit from elsewhere in MPX::RIF
-
+# ABSTRACT: - For stuff that I want to inherit/ from elsewhere in MPX::RIF
+# why export OO stuff?
 our @ISA       = qw(Exporter);
-our @EXPORT_OK = qw(debug log str2num);
+our @EXPORT_OK = qw(debug error log str2num registerMPX win2cyg);
 
 our $debug = 0;
 our $log   = init_log();    #will store the logger object
@@ -22,6 +22,25 @@ our $log   = init_log();    #will store the logger object
 	MPX::RIF::Helper::init_debug(); #activates debug
 	debug "blah"
 
+=cut
+
+##
+## MESSAGES
+##
+
+=func error 'message', $err_code;
+
+prints error message and exits with error code. This is intended for user 
+errors.
+
+=cut
+
+sub error {
+	my $msg=shift || '';
+	my $error_code=shift || 1;
+	print "Error: $msg!\n";
+	exit $error_code;
+}
 
 =head2 debug
 
@@ -120,6 +139,35 @@ sub unlink_log {
 }
 
 
+##
+## XML STUFF
+##
+
+
+=func my $xpc=registerMPX ($doc);
+
+Expects a XML::LibXML document. Returns a XML::LibXML::XPathContext.
+
+=cut
+
+sub registerMPX {
+	my $doc = shift;
+	my $xpc = XML::LibXML::XPathContext->new($doc);
+	$xpc->registerNs( 'mpx', 'http://www.mpx.org/mpx' );
+	return $xpc;
+}
+
+=func my $xpc=registerNS ($doc);
+=cut
+
+sub registerNS {
+	my $doc = shift;
+	my $xpc = XML::LibXML::XPathContext->new($doc);
+	$xpc->registerNs( 'mpx', 'http://www.mpx.org/mpx' );
+	return $xpc;
+}
+
+
 =func my $num=string2num ($string);
 	Simple translation of A to 1, B to 2 etc. for strings consisting of multiple letters.
 	
@@ -206,6 +254,42 @@ sub alpha2num {
 	}
 
 	warn "alpha2num error $in";
+}
+
+
+#
+# FILE PATH STUFF
+#
+
+=head2 my $cyg=win2cyg($win);
+
+very simple re-implementation of cygpath.
+
+=cut
+
+sub win2cyg {
+	my $win = shift;
+
+	#debug "WIN: '$win'";
+
+	my $drive;
+	{
+		$win =~ /(\w):\\/;
+		if ($1) {
+			$drive = $1;
+		}
+		else {
+			die "win2cyg: Drive not recognized!";
+		}
+	}
+
+	my $path = ( split /:\\/, $win )[-1];
+	$path =~ tr,\\,/,;
+	my $cyg = "/cygdrive/$drive/$path";
+
+	#debug "CYG: $cyg!";
+	return $cyg;
+
 }
 
 

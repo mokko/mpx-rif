@@ -3,41 +3,53 @@
 # PODNAME: MIMO-resmvr.pl
 # ABSTRACT: resource mover for MIMO
 # this one has a lot of bad code!
+##
+## THis vERSION HAS A HARVESTER bUT DoeS NOT WORK
+##
 
 use strict;
 use warnings;
-
-use File::Copy;
-use File::Spec;
-
 use Log::Handler;
 use XML::LibXML;
+use File::Copy;
 use YAML::Syck;
 use FindBin;
+use Path::Class;
 use Pod::Usage;
 use Image::Magick;
-use Path::Class;
-use Getopt::Std;
+use HTTP::OAI;
+
+use Encode qw(encode_utf8);    #not used currently...
+use XML::SAX::Writer;
+
+#assuming that this script will reside at bin/MIMO-resmvr.pl and will not be installed via make install
 use lib "$FindBin::Bin/../lib";
+
+#use MPX::RIF::Util qw(registerMPX win2cyg);
 use MPX::RIF::Helper qw(error debug registerMPX win2cyg);
-our $counter = 0;
+
+use Getopt::Std;
+our $counter = 0;              #for resources that were moved/renamed
 getopts( 'c:dhpv', my $opts = {} );
 pod2usage( -verbose => 2 ) if ( $opts->{h} );
 
 =head1 SYNOPSIS
 
-MIMO-resmvr.pl [-d] file.mpx
-
+MIMO-resmvr.pl 
+	-d be verbose and print debug information
 	-p is a plan only. No file is actually copied.
 
 
 =head1 DESCRIPTION
 
+This is a variant of the resource mover which talks directly to online
+data provider.
+
 For MIMO, we need to upload images to MIMO's FTP server. This script copies
 images to a temp directory and renames them using to $mulId.jpg. Currently
 ftp process is handled separately.
 
-1. Read a big mpx file
+1. Harvest mpx data from data provider
 2. Loop over every multimediaobjekt
 3. Check various conditions
 4. Move resource file to new location at temp/$mulId.jpg
@@ -87,9 +99,6 @@ if ( $opts->{p} ) {
 #-c or default: conf/$USER.yml
 my $config = loadConfig( $opts->{c} );
 
-error  'Need an mpx file' if ( !$ARGV[0] );
-error "Mpx file not found: $ARGV[0]" if ( !-f $ARGV[0] );
-
 # INIT LOG
 my $log = init_log();
 
@@ -97,7 +106,8 @@ my $log = init_log();
 # MAIN
 #
 
-# INIT MPX from file (either mume.mpx or lastharvest)
+# INIT MPX from file (harvest from online)
+
 # xpath includes conditions which have to fulfilled to be considered
 my $xpc   = init_mpx( $ARGV[0] );
 my $xpath = q(/mpx:museumPlusExport/mpx:multimediaobjekt[
@@ -115,10 +125,11 @@ foreach my $node (@nodes) {
 	my $node  = registerMPX($node);
 	my $mulId = getMulId($node);
 
-	#act on the file path that is saved in resource description
-	#multimediaDateiname, multimediaErweiterung etc.
-	#not sure warn is the right thing to do on error. Perhaps a log entry is enough
-	my ( $cygPath, $origExt ) = getPath($node) or warn "cygPath not returned!";
+ #act on the file path that is saved in resource description
+ #multimediaDateiname, multimediaErweiterung etc.
+ #not sure warn is the right thing to do on error. Perhaps a log entry is enough
+	my ( $cygPath, $origExt ) = getPath($node)
+	  or warn "cygPath not returned!";
 
 	#to move need cygPath, also corrects ext if needed and warns if file
 	#not found
@@ -134,7 +145,8 @@ foreach my $node (@nodes) {
 			if ( !$opts->{p} ) {
 				copy( $cygPath, $newCygPath );
 			}
-		} else {
+		}
+		else {
 			$log->warning("Resource not found:$cygPath");
 		}
 	}
@@ -143,7 +155,8 @@ foreach my $node (@nodes) {
 my $msg;
 if ( $opts->{p} ) {
 	$msg = "done. $counter files would have been copied/renamed\n";
-} else {
+}
+else {
 	$msg = "done. $counter files copied/renamed\n";
 }
 print $msg;
@@ -169,7 +182,7 @@ sub newPath {
 		$newExt = 'jpg';
 	}
 
-	my $newPath = file($config->{tempdir} , $mulId . '.' . $newExt);
+	my $newPath = $config->{tempdir} . '/' . $mulId . '.' . $newExt;
 	debug "newPath: $cygPath --> $newPath";
 	return $newPath;
 }
@@ -205,7 +218,7 @@ sub imageWork {
 	my $origExt = shift or die "Error";
 
 	#debug "Enter resizeJpg";
-	my $p = new Image::Magick;
+	my $p = Image::Magick->new ;
 	my ( $width, $height, $size, $format ) = $p->Ping($old);
 
 	if ( !$width ) {
@@ -226,7 +239,8 @@ sub imageWork {
 			$p->Write($new);
 		}
 		return;    #on return empty do NOT move!
-	} else {
+	}
+	else {
 		if ( $width < 800 && $height < 800 ) {
 			$log->warning("image smaller than 800 px: $old");
 		}
@@ -236,6 +250,12 @@ sub imageWork {
 
 =func my ($cygPath, $ext)=getPath($node);
 
+Expects a multimediaobjekt and returns the path composed of
+multimediaPfadangabe, multimediaDateiname, multimediaErweiterung
+nach dem Muster 
+	Pfad/Dateiname.Erweiterung
+
+	i.e. it working cygpath, not a windows path
 	returns full paths as saved in MPX, typically
 	M:\\bla\bli\blu\file.jpg
 
@@ -286,9 +306,10 @@ sub getPath {
 	return;
 }
 
-=func init_log ($tempdir);
+=func init_log;
 
-Return value?
+Expects location of temp directory in $config->{tempdir}.
+Return log object.
 
 =cut
 
@@ -303,10 +324,8 @@ sub init_log {
 	}
 
 	my $log = Log::Handler->new();
-
 	my $logfile = file( $config->{tempdir}, $config->{logfile} )->stringify;
-	
-	
+
 	if ( -f $logfile ) {
 
 		#debug "about to unlink logfile $file";
@@ -325,21 +344,77 @@ sub init_log {
 
 }
 
+sub harvest {
+
+	my $msg = sprintf "About to harvest '%s' set '%s' from '%s'",
+	  $config->{metadataPrefix}, $config->{set}, $config->{baseURL};
+	debug $msg;
+	$log->warning($msg);
+
+	#this should resume as default, but doesn't
+	my $h = HTTP::OAI::Harvester->new( baseURL => $config->{baseURL}, );
+
+	my $lr = $h->ListRecords(
+		metadataPrefix => $config->{metadataPrefix},
+		set            => $config->{set}
+	);
+	die $lr->message if $lr->is_error;
+
+	if ( $lr->resumptionToken ) {
+
+		while ( my $rt = $lr->resumptionToken ) {
+			debug 'HTTP::OAI does not resume, but it should...';
+
+			$lr->resume( resumptionToken => $rt );
+			die $lr->message if $lr->is_error;
+		}
+	}
+
+	#write to file cache, but continue...
+	#$lr->toDOM->toFile( $config->{harvest} );
+	my $xml;
+	$lr->set_handler( XML::SAX::Writer->new( Output => \$xml ) );
+	$lr->generate;
+	encode_utf8($xml);
+	
+	open( my $fh, '> : encoding(UTF-8)', $config->{harvest} )
+	  or die 'Error: Cannot write to file:' . $config->{harvest} . '! ' . $!;
+	print $fh $xml;
+	close $fh;
+
+	#encoding terror
+	my $dom = XML::LibXML->load_xml( string => $xml );
+	return $dom;
+
+	#i could also try libXML $doc->setEncoding($new_encoding);
+	#$lr->set_handler( XML::SAX::Writer->new( Output => /$xml) );
+	#$lr->generate;
+	#print encode_utf8($xml);
+}
+
 =func $xpc=init_mpx ('path/to/mpx');
 
 Opens mpx file with LibXML and registers namespace mpx.
 
+If no file exists at the location $config->{harvest}, initate a new harvest.
+Please delete harvest file manually if you want to update. Default location
+is at 
+	tempdir/harvest.mpx
+
 =cut
 
 sub init_mpx {
-	my $file = shift or die "Internal Error: init_mpx called without file";
+	my $doc;
+	if ( !-f $config->{harvest} ) {
+		debug "NEW harvest";
+		$doc = harvest();
+	}
+	else {
+		debug "load last harvest from FILE";
+		$doc = XML::LibXML->load_xml( location => $config->{harvest} );
+	}
 
-	error "$file does not exist" if ( !-e $file );
-	debug "About to load mpx file ($file)";
-
-	my $parser = XML::LibXML->new();
-	my $doc    = $parser->parse_file($file);
-	my $xpc    = registerMPX($doc);
+	my $xpc = registerMPX($doc);
 	debug "mpx successfully initialized";
 	return $xpc;
 }
@@ -363,7 +438,7 @@ sub loadConfig {
 	#default:conf/$user.yml
 	if ( !$ENV{USER} ) {
 		$ENV{USER} = 'USER';
-		debug "Environment variable 'USER' not defined. Asume USER";
+		debug "Environment variable 'USER' not defined. Assume USER";
 	}
 
 	#default
@@ -376,16 +451,27 @@ sub loadConfig {
 	error "Configuration file does not exist ($file)" if ( !-e $file );
 
 	my $config = LoadFile($file) or die "Cannot load config file";
-
 	error 'Configuration loaded, but no resourceMover info'
 	  if ( !$config->{resourceMover} );
+
+	#simple validate
+	#1) required values
+	foreach my $key (qw/tempdir metadataPrefix set baseURL/) {
+		error "required configuration key missing: $key"
+		  if ( !$config->{resourceMover}{$key} );
+	}
+
+	#2) defaults
+	if ( !$config->{resourceMover}{harvest} ) {
+		$config->{resourceMover}{harvest} =
+		  file( $config->{resourceMover}{tempdir}, 'harvest.mpx' )->stringify;
+	}
 
 	if ( !$config->{resourceMover}{logfile} ) {
 		$config->{resourceMover}{logfile} = 'resmvr.log';
 	}
 
 	return $config->{resourceMover};
-	debug $config->{tempdir};
+
+	#debug $config->{tempdir};
 }
-
-

@@ -1,11 +1,11 @@
 package MPX::RIF::Resource;
 
 # ABSTRACT: deal with resources and features
-use Carp qw/carp croak/;
+use Carp qw/croak/;
 use strict;
 use warnings;
-use MPX::RIF::Helper qw(debug log str2num);
-MPX::RIF::Helper::init_log();
+#use MPX::RIF::Helper qw(debug log str2num);
+#MPX::RIF::Helper::init_log();
 
 =head1 NAME
 
@@ -232,25 +232,19 @@ sub rmFeat {
 
 =func my $winpath=cygpath($nixPath);
 
-Quick and very dirty.
+Quick and very dirty. 
+
+Seems we have too many different cygpath functions around here.
 
 =cut
 
 sub cygpath {
-	my $nix_path = shift;
+	my $nix_path = shift or return;
 
 	#should I check if path is unix path? Could be difficult
-	if ($nix_path) {
 		my $win_path = `cygpath -wa '$nix_path'`;
 		$win_path =~ s/\s+$//;
 		return $win_path;
-
-	}
-	else {
-
-		#catches error which breaks execution
-		warn "Warning: cygpath called without param";
-	}
 }
 
 1;

@@ -12,7 +12,7 @@ use File::Spec;
 
 use Log::Handler;
 use XML::LibXML;
-use YAML::Syck;
+use YAML::XS 'LoadFile';
 use FindBin;
 use Pod::Usage;
 use Image::Magick;

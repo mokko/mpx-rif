@@ -87,7 +87,7 @@ if ( $opts->{p} ) {
 #-c or default: conf/$USER.yml
 my $config = loadConfig( $opts->{c} );
 
-error  'Need an mpx file' if ( !$ARGV[0] );
+error 'Need an mpx file' if ( !$ARGV[0] );
 error "Mpx file not found: $ARGV[0]" if ( !-f $ARGV[0] );
 
 # INIT LOG
@@ -115,14 +115,19 @@ foreach my $node (@nodes) {
 	my $node  = registerMPX($node);
 	my $mulId = getMulId($node);
 
-	#act on the file path that is saved in resource description
-	#multimediaDateiname, multimediaErweiterung etc.
-	#not sure warn is the right thing to do on error. Perhaps a log entry is enough
+ #act on the file path that is saved in resource description
+ #multimediaDateiname, multimediaErweiterung etc.
+ #not sure warn is the right thing to do on error. Perhaps a log entry is enough
 	my ( $cygPath, $origExt ) = getPath($node) or warn "cygPath not returned!";
 
 	#to move need cygPath, also corrects ext if needed and warns if file
 	#not found
 	my $newCygPath = newPath( $cygPath, $origExt, $mulId );
+
+	#new condition: work & copy resources only if it doesn't exist?
+	#then we don't get the full list of missing paths...
+	#if ( !-f $newCygPath ) {
+
 	my $todo = imageWork( $cygPath, $newCygPath, $origExt );
 
 	if ($todo) {
@@ -134,16 +139,20 @@ foreach my $node (@nodes) {
 			if ( !$opts->{p} ) {
 				copy( $cygPath, $newCygPath );
 			}
-		} else {
+		}
+		else {
 			$log->warning("Resource not found:$cygPath");
 		}
 	}
+
+	#}
 }
 
 my $msg;
 if ( $opts->{p} ) {
 	$msg = "done. $counter files would have been copied/renamed\n";
-} else {
+}
+else {
 	$msg = "done. $counter files copied/renamed\n";
 }
 print $msg;
@@ -169,7 +178,7 @@ sub newPath {
 		$newExt = 'jpg';
 	}
 
-	my $newPath = file($config->{tempdir} , $mulId . '.' . $newExt);
+	my $newPath = file( $config->{tempdir}, $mulId . '.' . $newExt );
 	debug "newPath: $cygPath --> $newPath";
 	return $newPath;
 }
@@ -226,7 +235,8 @@ sub imageWork {
 			$p->Write($new);
 		}
 		return;    #on return empty do NOT move!
-	} else {
+	}
+	else {
 		if ( $width < 800 && $height < 800 ) {
 			$log->warning("image smaller than 800 px: $old");
 		}
@@ -305,8 +315,7 @@ sub init_log {
 	my $log = Log::Handler->new();
 
 	my $logfile = file( $config->{tempdir}, $config->{logfile} )->stringify;
-	
-	
+
 	if ( -f $logfile ) {
 
 		#debug "about to unlink logfile $file";
@@ -387,5 +396,4 @@ sub loadConfig {
 	return $config->{resourceMover};
 	debug $config->{tempdir};
 }
-
 

@@ -1,4 +1,10 @@
 Revision history for MPX-RIF
+0.029 - 2014-01-25
+	add bin/doublecheck.pl
+	replace YAML::Syck with YAML::XS
+	refactoring to share more code using MPX::RIF::Helper
+	tests repaired
+0.028 - 2014-01-25
 0.027- 2011-11-10
 	change mulId generation to ensure uniqueness;test mulId uniqueness during 4-filter
 	also added a deactivated "filemover" to speed up the moving of files, very quick and dirty

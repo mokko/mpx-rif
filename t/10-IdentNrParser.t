@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use Test::More;
 
+
 my %cases = (
 	#$got=>$expected,
 	'path/to/VII a 123 a -A.jpg' => 'VII a 123 a',
@@ -19,6 +20,8 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 require_ok('MPX::RIF::Resource');
 require_ok('MPX::RIF::MIMO');
+MPX::RIF::Helper::init_log();
+
 
 foreach my $path ( keys %cases ) {
 

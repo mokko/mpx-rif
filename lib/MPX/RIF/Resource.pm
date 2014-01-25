@@ -4,7 +4,7 @@ package MPX::RIF::Resource;
 use Carp qw/croak/;
 use strict;
 use warnings;
-#use MPX::RIF::Helper qw(debug log str2num);
+use MPX::RIF::Helper qw(debug log str2num);
 #MPX::RIF::Helper::init_log();
 
 =head1 NAME

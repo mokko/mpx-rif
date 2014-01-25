@@ -67,7 +67,6 @@ while (<$fh>) {
 			$c++;
 		}
 	}
-	$r=$r-$c;
 }
-
+$r=$r-$c;
 say "$c files copied; $r remain missing\n";

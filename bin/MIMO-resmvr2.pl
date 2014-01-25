@@ -12,7 +12,7 @@ use warnings;
 use Log::Handler;
 use XML::LibXML;
 use File::Copy;
-use YAML::Syck;
+use YAML::XS;
 use FindBin;
 use Path::Class;
 use Pod::Usage;

@@ -21,7 +21,6 @@ pod2usage( -verbose => 2 ) if ( $opts->{h} );
 MPX::RIF::Helper::init_debug() if ( $opts->{v} or $opts->{d} );
 debug "Debug mode on";
 my $dir = '/cygdrive/R/MIMO-JPGS_Ready-To-Go';
-$dir = '/cygdrive/Z/MIMO';
 my $c = 0;    #count files that have actually been moved
 my $r = 0;    #count files that are still not found
 

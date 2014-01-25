@@ -3,11 +3,13 @@ use strict;
 use warnings;
 use Exporter;
 use Log::Handler;
+use Path::Class 'file';
+use YAML::XS 'LoadFile';
 
 # ABSTRACT: - For stuff that I want to inherit/ from elsewhere in MPX::RIF
 # why export OO stuff?
 our @ISA       = qw(Exporter);
-our @EXPORT_OK = qw(debug error log str2num registerMPX win2cyg);
+our @EXPORT_OK = qw(debug error log str2num registerMPX win2cyg loadConfig);
 
 our $debug = 0;
 our $log   = init_log();    #will store the logger object
@@ -91,12 +93,7 @@ sub init_debug {
 =cut
 
 sub init_log {
-	my $file    = shift;
-	my $default = "mpx-rif.log";
-
-	if ( !$file ) {
-		$file = $default;
-	}
+	my $file    = shift || 'mpx-rif.log';
 
 	$log = Log::Handler->new();
 
@@ -136,6 +133,51 @@ sub unlink_log {
 		debug "logfile does not exist so nothing to do $file";
 	}
 
+}
+
+
+sub loadConfig {
+	my $optc = shift;
+
+	#default:conf/$user.yml
+	if ( !$ENV{USER} ) {
+		$ENV{USER} = 'USER';
+		debug "Environment variable 'USER' not defined. Assume USER";
+	}
+
+	#default
+	my $file = file( $FindBin::Bin, '..', 'conf', $ENV{USER} . '.yml' );
+
+	#overwrite default if -c
+	$file = $optc if ($optc);
+
+	debug "Trying to load configuration from $file";
+	error "Configuration file does not exist ($file)" if ( !-e $file );
+
+	my $config = LoadFile($file) or die "Cannot load config file";
+	error 'Configuration loaded, but no resourceMover info'
+	  if ( !$config->{resourceMover} );
+
+	#simple validate
+	#1) required values
+	foreach my $key (qw/tempdir metadataPrefix set baseURL/) {
+		error "required configuration key missing: $key"
+		  if ( !$config->{resourceMover}{$key} );
+	}
+
+	#2) defaults
+	if ( !$config->{resourceMover}{harvest} ) {
+		$config->{resourceMover}{harvest} =
+		  file( $config->{resourceMover}{tempdir}, 'harvest.mpx' )->stringify;
+	}
+
+	if ( !$config->{resourceMover}{logfile} ) {
+		$config->{resourceMover}{logfile} = 'resmvr.log';
+	}
+
+	return $config->{resourceMover};
+
+	#debug $config->{tempdir};
 }
 
 

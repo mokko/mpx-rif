@@ -23,8 +23,6 @@ use XML::Writer;
 use XML::LibXSLT;
 use YAML::XS qw (LoadFile DumpFile);
 
-#works also with XML::Syck in case that is easier to install
-
 #TODO: more config
 our $temp = {
 	1 => '1-scandir.yml',
@@ -94,18 +92,40 @@ config is the path to a yaml configuration file.
 	Config file parameters are described inside the example config.
 
 OPTIONAL
-	BEGIN => 1 #makes MPX::RIF start with yml file
-				0 for off
-				1 read scandir from yml file
-				2 read parsedir from yml file
-				3 read lookup from yml file
-	DEBUG=>1, # turns debug messages on/off; 1 for on - 0 for off
-	STOP=> 1, # stop after step 1,
-				0 don't stop
-				1 stop after step 1,
-				2 stop after step 2,
-				3 stop after step 3,
-				4 and higher - ignored (same as 0)
+
+=over
+
+=item BEGIN => 1 #makes MPX::RIF start with yml file
+
+=over
+
+=item 0 for off
+
+=item 1 read scandir from yml file
+
+=item 2 read parsedir from yml file
+
+=item 3 read lookup from yml file
+
+=back
+
+=item	DEBUG=>1, # turns debug messages on/off; 1 for on - 0 for off
+
+=item	STOP=> 1, # stop after step 1,
+
+=over
+
+=item 0 don't stop
+
+=item 1 stop after step 1,
+
+=item 2 stop after step 2,
+
+=item 3 stop after step 3,
+
+=item 4 and higher - ignored (same as 0)
+
+=back
 
 =cut
 
@@ -117,7 +137,7 @@ sub new {
 		croak "Internal Error: No options!";
 	}
 	my $self = _loadConfig($opts);
-	bless $self, $class;
+	bless $self, $class;    #Perl's ancient object system...
 
 	#map the module options into the faker object
 	$self->_addCLI($opts);
@@ -221,10 +241,11 @@ sub filter {
 				#quick and dirty file mover.
 				#I better deactivate it before I continue.
 
-				my $msg     = "$id -- mulId $mulId is not unique!";
+				my $msg = "$id -- mulId $mulId is not unique!";
 				my $newpath;
+
 				#$newpath = $self->filemover($id);
-				
+
 				if ($newpath) {
 					$msg .= "\nmv $id $newpath";
 				}
@@ -257,7 +278,8 @@ sub filter {
 	$self->_dumpStore( $temp->{4} );
 
 	if ( $err > 0 ) {
-		log uc ("Not all mulIds are unique!");
+		log uc("Not all mulIds are unique!");
+
 		#exit 1;
 	}
 
@@ -1194,12 +1216,8 @@ sub _unwrapAndWrite {
 
 sub _unwrap {
 	my $dom = shift or die "Need response";
-	my $unwrapFN = realpath(
-		File::Spec->catfile( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
-	if ( !-f $unwrapFN ) {
-		die "$unwrapFN not cound. Check bin../xsl/unwrap.xsl";
-	}
-
+	my $unwrapFN = realpath( file( $FindBin::Bin, '..', 'xsl', 'unwrap.xsl' ) );
+	die "$unwrapFN not cound at $unwrapFN" if ( !-f $unwrapFN );
 	my $xslt      = XML::LibXSLT->new();
 	my $style_doc = XML::LibXML->load_xml(
 		location => $unwrapFN,

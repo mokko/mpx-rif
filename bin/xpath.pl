@@ -20,6 +20,7 @@ getopts( 'df:hn:s:v', my $opts = {} );
 MPX::RIF::Helper::init_debug() if ( $opts->{v} or $opts->{d} );
 $opts->{config}{namespaces}{mpx}='http://www.mpx.org/mpx';
 $opts->{config}{namespaces}{oai}='http://www.openarchives.org/OAI/2.0/';
+$opts->{config}{namespaces}{lido}='http://www.lido-schema.org http://www.lido-schema.org/schema/v1.0/lido-v1.0.xsd';
 
 pod2usage() if ( $opts->{h} );
 
